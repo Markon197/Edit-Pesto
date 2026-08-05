@@ -31,14 +31,20 @@ export default function Home() {
     setTimeout(() => setCopiedFlag((cur) => (cur === key ? null : cur)), 1400);
   }
 
-  // Decorate every <del><ins> pair the check produced with its own accept/deny
-  // controls, once, right after new results land in the DOM.
+  // The output pane's HTML is owned entirely by this effect, not by React's
+  // JSX (no dangerouslySetInnerHTML on that div). If React also described its
+  // children, any later re-render (even one triggered by our own setStats
+  // below) would silently overwrite the accept/deny buttons we inject here,
+  // since React always re-syncs a node it thinks it owns.
   useEffect(() => {
-    if (!result || !outputRef.current) {
+    if (!outputRef.current) return;
+    const container = outputRef.current;
+    if (!result) {
+      container.innerHTML = "";
       setStats({ total: 0, accepted: 0, denied: 0, pending: 0 });
       return;
     }
-    const container = outputRef.current;
+    container.innerHTML = result.annotatedHtml;
     const dels = Array.from(container.querySelectorAll("del"));
     let editId = 0;
     dels.forEach((del) => {
@@ -264,7 +270,6 @@ export default function Home() {
               className="output-body"
               data-placeholder="Your checked article will appear here. Each fix gets its own ✓ accept / ✕ keep-original buttons."
               onClick={handleOutputClick}
-              dangerouslySetInnerHTML={{ __html: result?.annotatedHtml ?? "" }}
             />
             <div className="pane-actions">
               {error && <div className="error-banner">{error}</div>}
