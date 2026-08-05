@@ -96,12 +96,23 @@ body {
 
 .masthead {
   background: var(--navy);
+  background-image: linear-gradient(135deg, var(--navy) 0%, var(--navy-deep) 100%);
   color: #fff;
-  padding: 22px 32px;
+  padding: 20px 32px;
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 14px;
   flex-wrap: wrap;
+  border-bottom: 3px solid var(--pesto);
+}
+.masthead .brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.masthead .logo-mark {
+  flex-shrink: 0;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
 }
 .masthead .wordmark {
   font-family: Georgia, "Iowan Old Style", "Times New Roman", serif;
@@ -166,6 +177,10 @@ main {
   color: var(--ink-soft);
   text-align: right;
 }
+.pane-head .count.count-ready {
+  color: var(--pesto);
+  font-weight: 700;
+}
 
 .input-area {
   flex: 1;
@@ -213,25 +228,37 @@ main {
   color: var(--navy);
 }
 
-/* Per-edit accept / reject controls, injected next to each <del><ins> pair */
+/* Per-edit accept / reject controls, injected next to each <del><ins> pair.
+   Styled as a small solid "chip" (not just tinted text) so it reads clearly
+   as a control in both themes, at any zoom level. */
 .edit-controls {
   display: inline-flex;
-  gap: 3px;
-  margin: 0 3px;
+  align-items: center;
+  gap: 4px;
+  margin: 0 5px;
+  padding: 3px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
   vertical-align: middle;
 }
 .edit-controls.edit-done {
   display: none;
 }
 .edit-btn {
-  all: unset;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  font-size: 0.7rem;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 800;
   line-height: 1;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-weight: 700;
-  border: 1px solid transparent;
+  padding: 6px 10px;
+  min-width: 32px;
+  border-radius: 6px;
+  border: none;
 }
 .edit-btn:focus-visible {
   outline: 2px solid var(--navy);
@@ -240,18 +267,16 @@ main {
 .edit-accept {
   background: var(--add-bg);
   color: var(--add-ink);
-  border-color: var(--add-ink);
 }
 .edit-accept:hover {
-  filter: brightness(0.95);
+  filter: brightness(0.93);
 }
 .edit-reject {
   background: var(--del-bg);
   color: var(--del-ink);
-  border-color: var(--del-ink);
 }
 .edit-reject:hover {
-  filter: brightness(0.95);
+  filter: brightness(0.93);
 }
 .edit-resolved-hide {
   display: none;
@@ -356,6 +381,7 @@ button:disabled {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  border-top: 3px solid var(--pesto);
 }
 .card h3 {
   margin: 0;
@@ -387,6 +413,10 @@ button:disabled {
   border-radius: 7px;
   background: var(--navy-tint);
   font-size: 0.94rem;
+  transition: background 0.12s ease;
+}
+.headline-list li:hover {
+  background: var(--line);
 }
 .icon-btn {
   border: 1px solid var(--line);

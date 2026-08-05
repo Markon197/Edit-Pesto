@@ -207,8 +207,24 @@ export default function Home() {
   return (
     <>
       <div className="masthead">
-        <div className="wordmark">
-          Edit<span>Pesto</span>
+        <div className="brand">
+          <svg className="logo-mark" viewBox="0 0 32 32" width="30" height="30" aria-hidden="true">
+            <path
+              d="M16 3c6.5 2 10.5 8 9 15-1.3 6.2-5.5 10.6-9 12.5-3.5-1.9-7.7-6.3-9-12.5-1.5-7 2.5-13 9-15z"
+              fill="#c9dc9c"
+            />
+            <path
+              d="M16 6.5v19M16 12l-4.2-2M16 16l-4.6-1.5M16 20l-4-1M16 12l4.2-2M16 16l4.6-1.5M16 20l4-1"
+              stroke="#5f7a2b"
+              strokeWidth="0.8"
+              strokeLinecap="round"
+              fill="none"
+              opacity="0.7"
+            />
+          </svg>
+          <div className="wordmark">
+            Edit<span>Pesto</span>
+          </div>
         </div>
         <div className="tag">Final proofing pass for InsuranceERM copy</div>
       </div>
@@ -239,7 +255,9 @@ export default function Home() {
           <div className="pane">
             <div className="pane-head">
               <h2>Ready to publish</h2>
-              <span className="count">{countLabel}</span>
+              <span className={`count${result && stats.total > 0 && stats.pending === 0 ? " count-ready" : ""}`}>
+                {countLabel}
+              </span>
             </div>
             <div
               ref={outputRef}
