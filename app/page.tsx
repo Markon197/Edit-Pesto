@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { VERSION_LABEL } from "@/lib/version";
 
 type CheckResult = {
   annotatedHtml: string;
@@ -10,6 +11,36 @@ type CheckResult = {
 };
 
 type Stats = { total: number; accepted: number; denied: number; pending: number };
+
+function CheckingAnimation() {
+  return (
+    <div className="checking-state">
+      <svg className="pasta-bowl" viewBox="0 0 80 60" width="72" height="54" aria-hidden="true">
+        <g className="steam" fill="none" stroke="var(--ink-soft)" strokeWidth="2" strokeLinecap="round">
+          <path className="steam-1" d="M28 26c-3-4 3-6 0-11" />
+          <path className="steam-2" d="M40 24c-3-4 3-6 0-11" />
+          <path className="steam-3" d="M52 26c-3-4 3-6 0-11" />
+        </g>
+        <path
+          d="M14 30c0 12 11.6 22 26 22s26-10 26-22"
+          fill="none"
+          stroke="var(--ink-soft)"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+        <ellipse cx="40" cy="30" rx="26" ry="6" fill="none" stroke="var(--ink)" strokeWidth="2" />
+        <path
+          d="M25 29c3-2 6 1 9-1s6 1 9-1 6 1 9-1"
+          fill="none"
+          stroke="var(--pesto)"
+          strokeWidth="2.4"
+          strokeLinecap="round"
+        />
+      </svg>
+      <p className="checking-text">Checking your copy…</p>
+    </div>
+  );
+}
 
 function htmlToText(html: string): string {
   const div = document.createElement("div");
@@ -215,22 +246,22 @@ export default function Home() {
       <div className="masthead">
         <div className="brand">
           <svg className="logo-mark" viewBox="0 0 32 32" width="30" height="30" aria-hidden="true">
+            <line x1="16" y1="10" x2="16" y2="5" stroke="#201d16" strokeWidth="1.3" />
             <path
-              d="M16 3c6.5 2 10.5 8 9 15-1.3 6.2-5.5 10.6-9 12.5-3.5-1.9-7.7-6.3-9-12.5-1.5-7 2.5-13 9-15z"
-              fill="#c9dc9c"
+              d="M16 2.3c1.9 0 3.4 1.2 3.4 2.7 0 .9-1.5 1.4-3.4 1.4s-3.4-.5-3.4-1.4c0-1.5 1.5-2.7 3.4-2.7z"
+              fill="#4c6b23"
             />
-            <path
-              d="M16 6.5v19M16 12l-4.2-2M16 16l-4.6-1.5M16 20l-4-1M16 12l4.2-2M16 16l4.6-1.5M16 20l4-1"
-              stroke="#5f7a2b"
-              strokeWidth="0.8"
-              strokeLinecap="round"
-              fill="none"
-              opacity="0.7"
-            />
+            <rect x="6" y="10" width="20" height="16" rx="6" fill="#fffdf8" stroke="#201d16" strokeWidth="1.3" />
+            <circle cx="5" cy="17.5" r="2" fill="#fffdf8" stroke="#201d16" strokeWidth="1.1" />
+            <circle cx="27" cy="17.5" r="2" fill="#fffdf8" stroke="#201d16" strokeWidth="1.1" />
+            <circle cx="12.5" cy="18.5" r="1.6" fill="#201d16" />
+            <circle cx="19.5" cy="18.5" r="1.6" fill="#201d16" />
+            <rect x="12" y="22" width="8" height="2" rx="1" fill="#4c6b23" opacity="0.85" />
           </svg>
           <div className="wordmark">
-            Edit<span>Pesto</span>
+            Pesto<span>Bot</span>
           </div>
+          <span className="version-badge">{VERSION_LABEL}</span>
         </div>
         <div className="tag">Final proofing pass for InsuranceERM copy</div>
       </div>
@@ -265,12 +296,19 @@ export default function Home() {
                 {countLabel}
               </span>
             </div>
-            <div
-              ref={outputRef}
-              className="output-body"
-              data-placeholder="Your checked article will appear here. Each fix gets its own ✓ accept / ✕ keep-original buttons."
-              onClick={handleOutputClick}
-            />
+            <div className="output-body-wrap">
+              {/* Loading overlay is a sibling, not a swap: the ref'd div below
+                  must stay mounted at all times so outputRef.current is never
+                  null when the decoration effect runs (see effect comment). */}
+              {loading && <CheckingAnimation />}
+              <div
+                ref={outputRef}
+                className="output-body"
+                data-placeholder="Your checked article will appear here. Each fix gets its own ✓ accept / ✕ keep-original buttons."
+                onClick={handleOutputClick}
+                style={loading ? { display: "none" } : undefined}
+              />
+            </div>
             <div className="pane-actions">
               {error && <div className="error-banner">{error}</div>}
               <button className="btn-primary" onClick={acceptAllRemaining} disabled={!result || stats.pending === 0}>

@@ -1,84 +1,28 @@
 :root {
-  --navy: #00468c;
-  --navy-deep: #00335e;
-  --navy-tint: #e8eef6;
-  --pesto: #5f7a2b;
-  --pesto-tint: #eef2e2;
-  --paper: #f7f7f4;
-  --panel: #ffffff;
-  --ink: #1f2430;
-  --ink-soft: #565f6e;
-  --line: #dfe2e6;
-  --del-bg: #fbe6e6;
-  --del-ink: #a23b3b;
-  --add-bg: #eaf3e3;
-  --add-ink: #3f6b1f;
-  --error-bg: #fbe6e6;
-  --error-ink: #a23b3b;
-  --shadow: 0 1px 2px rgba(15, 26, 46, 0.06), 0 8px 24px rgba(15, 26, 46, 0.05);
-  --radius: 10px;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --navy: #5b8fd6;
-    --navy-deep: #3f6db0;
-    --navy-tint: #152134;
-    --pesto: #9db66a;
-    --pesto-tint: #1c2417;
-    --paper: #12151c;
-    --panel: #1a1f29;
-    --ink: #e8eaee;
-    --ink-soft: #a1a8b5;
-    --line: #2c3341;
-    --del-bg: #3a2224;
-    --del-ink: #e0989a;
-    --add-bg: #213421;
-    --add-ink: #a9d18a;
-    --error-bg: #3a2224;
-    --error-ink: #e0989a;
-    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.35);
-  }
-}
-
-:root[data-theme="dark"] {
-  --navy: #5b8fd6;
-  --navy-deep: #3f6db0;
-  --navy-tint: #152134;
-  --pesto: #9db66a;
-  --pesto-tint: #1c2417;
-  --paper: #12151c;
-  --panel: #1a1f29;
-  --ink: #e8eaee;
-  --ink-soft: #a1a8b5;
-  --line: #2c3341;
-  --del-bg: #3a2224;
-  --del-ink: #e0989a;
-  --add-bg: #213421;
-  --add-ink: #a9d18a;
-  --error-bg: #3a2224;
-  --error-ink: #e0989a;
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.35);
-}
-
-:root[data-theme="light"] {
-  --navy: #00468c;
-  --navy-deep: #00335e;
-  --navy-tint: #e8eef6;
-  --pesto: #5f7a2b;
-  --pesto-tint: #eef2e2;
-  --paper: #f7f7f4;
-  --panel: #ffffff;
-  --ink: #1f2430;
-  --ink-soft: #565f6e;
-  --line: #dfe2e6;
-  --del-bg: #fbe6e6;
-  --del-ink: #a23b3b;
-  --add-bg: #eaf3e3;
-  --add-ink: #3f6b1f;
-  --error-bg: #fbe6e6;
-  --error-ink: #a23b3b;
-  --shadow: 0 1px 2px rgba(15, 26, 46, 0.06), 0 8px 24px rgba(15, 26, 46, 0.05);
+  /* Editorial / broadsheet palette — warm paper, hairline rules, ink text.
+     Navy is the InsuranceERM accent (sampled from insuranceerm.com); olive
+     is the one "pesto" touch, used sparingly for positive actions.
+     Deliberately a single, light theme — no automatic dark-mode switch, so
+     the look is consistent regardless of the reader's OS color-scheme. */
+  color-scheme: light;
+  --navy: #1c3a63;
+  --navy-deep: #142a49;
+  --navy-tint: #eef1f5;
+  --pesto: #4c6b23;
+  --pesto-tint: #eef1e4;
+  --paper: #f7f4ec;
+  --panel: #fffdf8;
+  --ink: #201d16;
+  --ink-soft: #6b6357;
+  --line: #ddd6c5;
+  --del-bg: #f6e6e2;
+  --del-ink: #8a3b2c;
+  --add-bg: #e9efdd;
+  --add-ink: #3f5a1c;
+  --error-bg: #f6e6e2;
+  --error-ink: #8a3b2c;
+  --shadow: 0 1px 2px rgba(32, 29, 22, 0.05);
+  --radius: 4px;
 }
 
 * {
@@ -90,20 +34,19 @@ body {
   margin: 0;
   background: var(--paper);
   color: var(--ink);
-  font-family: "Source Sans Pro", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: Georgia, "Times New Roman", "Noto Serif", serif;
   -webkit-font-smoothing: antialiased;
 }
 
 .masthead {
-  background: var(--navy);
-  background-image: linear-gradient(135deg, var(--navy) 0%, var(--navy-deep) 100%);
-  color: #fff;
-  padding: 20px 32px;
+  background: var(--panel);
+  color: var(--ink);
+  padding: 20px 32px 16px;
   display: flex;
-  align-items: center;
-  gap: 14px;
+  align-items: baseline;
+  gap: 16px;
   flex-wrap: wrap;
-  border-bottom: 3px solid var(--pesto);
+  border-bottom: 3px double var(--ink);
 }
 .masthead .brand {
   display: flex;
@@ -112,22 +55,32 @@ body {
 }
 .masthead .logo-mark {
   flex-shrink: 0;
-  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
 }
 .masthead .wordmark {
-  font-family: Georgia, "Iowan Old Style", "Times New Roman", serif;
-  font-size: 1.7rem;
+  font-size: 1.9rem;
   font-weight: 700;
   letter-spacing: 0.2px;
+  color: var(--navy);
 }
 .masthead .wordmark span {
-  color: #c9dc9c;
+  color: var(--pesto);
+}
+.masthead .version-badge {
+  font-family: Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 2px 7px;
+  align-self: center;
 }
 .masthead .tag {
-  color: #cfdcef;
+  color: var(--ink-soft);
   font-size: 0.92rem;
-  border-left: 1px solid rgba(255, 255, 255, 0.35);
-  padding-left: 14px;
+  font-style: italic;
+  border-left: 1px solid var(--line);
+  padding-left: 16px;
 }
 
 main {
@@ -160,20 +113,23 @@ main {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 18px;
+  padding: 13px 18px;
   border-bottom: 1px solid var(--line);
   gap: 10px;
 }
 .pane-head h2 {
   margin: 0;
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   color: var(--ink-soft);
   font-weight: 700;
+  font-family: Georgia, "Times New Roman", serif;
 }
 .pane-head .count {
-  font-size: 0.8rem;
+  font-family: Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-size: 0.85rem;
   color: var(--ink-soft);
   text-align: right;
 }
@@ -185,8 +141,8 @@ main {
 .input-area {
   flex: 1;
   padding: 20px 22px;
-  font-size: 1.02rem;
-  line-height: 1.65;
+  font-size: 1.08rem;
+  line-height: 1.7;
   color: var(--ink);
   overflow: auto;
 }
@@ -196,41 +152,48 @@ main {
 .input-area:empty::before {
   content: attr(data-placeholder);
   color: var(--ink-soft);
+  font-style: italic;
+}
+
+.output-body-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .output-body {
   flex: 1;
   padding: 20px 22px;
-  font-size: 1.02rem;
-  line-height: 1.7;
+  font-size: 1.08rem;
+  line-height: 1.75;
   overflow: auto;
 }
 .output-body:empty::before {
   content: attr(data-placeholder);
   color: var(--ink-soft);
+  font-style: italic;
 }
 .output-body del {
   background: var(--del-bg);
   color: var(--del-ink);
   text-decoration: line-through;
   padding: 0 2px;
-  border-radius: 3px;
+  border-radius: 2px;
 }
 .output-body ins {
   background: var(--add-bg);
   color: var(--add-ink);
   text-decoration: none;
   padding: 0 2px;
-  border-radius: 3px;
-  font-weight: 600;
+  border-radius: 2px;
+  font-weight: 700;
 }
 .output-body a {
   color: var(--navy);
 }
 
-/* Per-edit accept / reject controls, injected next to each <del><ins> pair.
-   Styled as a small solid "chip" (not just tinted text) so it reads clearly
-   as a control in both themes, at any zoom level. */
+/* Per-edit accept / reject controls, injected next to each <del><ins> pair. */
 .edit-controls {
   display: inline-flex;
   align-items: center;
@@ -238,9 +201,8 @@ main {
   margin: 0 5px;
   padding: 3px;
   background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  box-shadow: var(--shadow);
+  border: 1px solid var(--ink-soft);
+  border-radius: 4px;
   vertical-align: middle;
 }
 .edit-controls.edit-done {
@@ -251,13 +213,13 @@ main {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-family: inherit;
+  font-family: Georgia, "Times New Roman", serif;
   font-size: 0.85rem;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1;
   padding: 6px 10px;
   min-width: 32px;
-  border-radius: 6px;
+  border-radius: 3px;
   border: none;
 }
 .edit-btn:focus-visible {
@@ -269,14 +231,14 @@ main {
   color: var(--add-ink);
 }
 .edit-accept:hover {
-  filter: brightness(0.93);
+  filter: brightness(0.94);
 }
 .edit-reject {
   background: var(--del-bg);
   color: var(--del-ink);
 }
 .edit-reject:hover {
-  filter: brightness(0.93);
+  filter: brightness(0.94);
 }
 .edit-resolved-hide {
   display: none;
@@ -289,6 +251,58 @@ main {
   padding: 0;
 }
 
+/* Loading state — shown in the output pane while a check is running */
+.checking-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  color: var(--ink-soft);
+}
+.checking-text {
+  font-style: italic;
+  font-size: 0.98rem;
+  margin: 0;
+}
+.pasta-bowl .steam path {
+  opacity: 0;
+  animation: steam-rise 2.6s ease-in-out infinite;
+}
+.pasta-bowl .steam-1 {
+  animation-delay: 0s;
+}
+.pasta-bowl .steam-2 {
+  animation-delay: 0.6s;
+}
+.pasta-bowl .steam-3 {
+  animation-delay: 1.2s;
+}
+@keyframes steam-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  30% {
+    opacity: 0.6;
+  }
+  85% {
+    opacity: 0;
+    transform: translateY(-11px);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-11px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pasta-bowl .steam path {
+    animation: none;
+    opacity: 0.35;
+  }
+}
+
 .pane-actions {
   display: flex;
   gap: 10px;
@@ -299,11 +313,11 @@ main {
 }
 
 button {
-  font-family: inherit;
+  font-family: Georgia, "Times New Roman", serif;
   font-size: 0.92rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  border-radius: 8px;
+  border-radius: var(--radius);
   padding: 10px 16px;
   border: 1px solid transparent;
   transition: filter 0.12s ease, transform 0.05s ease, opacity 0.12s ease;
@@ -312,11 +326,11 @@ button:active {
   transform: translateY(1px);
 }
 button:focus-visible {
-  outline: 3px solid var(--navy);
+  outline: 2px solid var(--navy);
   outline-offset: 2px;
 }
 button:disabled {
-  opacity: 0.55;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 .btn-primary {
@@ -331,20 +345,22 @@ button:disabled {
   color: #fff;
 }
 .btn-secondary:hover:not(:disabled) {
-  filter: brightness(1.1);
+  filter: brightness(1.12);
 }
 .btn-ghost {
   background: transparent;
   color: var(--ink);
-  border-color: var(--line);
+  border-color: var(--ink-soft);
 }
 .btn-ghost:hover:not(:disabled) {
   background: var(--navy-tint);
 }
 .copied-flag {
-  font-size: 0.82rem;
+  font-family: Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-size: 0.85rem;
   color: var(--pesto);
-  font-weight: 600;
+  font-weight: 700;
   opacity: 0;
   transition: opacity 0.15s ease;
 }
@@ -355,10 +371,12 @@ button:disabled {
 .error-banner {
   background: var(--error-bg);
   color: var(--error-ink);
-  border-radius: 8px;
+  border: 1px solid var(--error-ink);
+  border-radius: var(--radius);
   padding: 10px 14px;
   font-size: 0.9rem;
   margin-bottom: 14px;
+  width: 100%;
 }
 
 .side-row {
@@ -381,18 +399,21 @@ button:disabled {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  border-top: 3px solid var(--pesto);
 }
 .card h3 {
-  margin: 0;
-  font-size: 0.78rem;
+  margin: 0 0 2px;
+  font-size: 0.72rem;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   color: var(--ink-soft);
   font-weight: 700;
+  font-family: Georgia, "Times New Roman", serif;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 10px;
 }
 .card .empty-hint {
-  font-size: 0.88rem;
+  font-size: 0.92rem;
+  font-style: italic;
   color: var(--ink-soft);
 }
 
@@ -410,23 +431,24 @@ button:disabled {
   justify-content: space-between;
   gap: 10px;
   padding: 9px 10px;
-  border-radius: 7px;
+  border-radius: 3px;
   background: var(--navy-tint);
-  font-size: 0.94rem;
+  font-size: 0.96rem;
   transition: background 0.12s ease;
 }
 .headline-list li:hover {
   background: var(--line);
 }
 .icon-btn {
-  border: 1px solid var(--line);
+  border: 1px solid var(--ink-soft);
   background: var(--panel);
-  border-radius: 6px;
+  border-radius: 3px;
   padding: 5px 8px;
   font-size: 0.78rem;
   font-weight: 700;
   color: var(--navy);
   flex-shrink: 0;
+  font-family: Georgia, "Times New Roman", serif;
 }
 .icon-btn:hover {
   background: var(--navy-tint);
@@ -438,17 +460,17 @@ button:disabled {
   gap: 6px;
   background: var(--paper);
   border: 1px solid var(--line);
-  border-radius: 7px;
+  border-radius: 3px;
   padding: 10px;
-  font-size: 0.9rem;
+  font-size: 0.92rem;
   min-height: 44px;
 }
 .chip {
   background: var(--pesto-tint);
   color: var(--pesto);
-  border-radius: 5px;
+  border-radius: 2px;
   padding: 2px 8px;
-  font-weight: 600;
+  font-weight: 700;
 }
 .sep {
   color: var(--ink-soft);
@@ -459,6 +481,7 @@ button:disabled {
   color: var(--ink-soft);
   font-size: 0.85rem;
   margin-bottom: 14px;
+  font-style: italic;
 }
 
 @media (prefers-reduced-motion: reduce) {
