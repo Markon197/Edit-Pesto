@@ -209,17 +209,59 @@ main {
   border-radius: 3px;
   font-weight: 600;
 }
-.output-body.clean del {
-  display: none;
-}
-.output-body.clean ins {
-  background: transparent;
-  color: inherit;
-  font-weight: 400;
-  padding: 0;
-}
 .output-body a {
   color: var(--navy);
+}
+
+/* Per-edit accept / reject controls, injected next to each <del><ins> pair */
+.edit-controls {
+  display: inline-flex;
+  gap: 3px;
+  margin: 0 3px;
+  vertical-align: middle;
+}
+.edit-controls.edit-done {
+  display: none;
+}
+.edit-btn {
+  all: unset;
+  cursor: pointer;
+  font-size: 0.7rem;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+.edit-btn:focus-visible {
+  outline: 2px solid var(--navy);
+  outline-offset: 1px;
+}
+.edit-accept {
+  background: var(--add-bg);
+  color: var(--add-ink);
+  border-color: var(--add-ink);
+}
+.edit-accept:hover {
+  filter: brightness(0.95);
+}
+.edit-reject {
+  background: var(--del-bg);
+  color: var(--del-ink);
+  border-color: var(--del-ink);
+}
+.edit-reject:hover {
+  filter: brightness(0.95);
+}
+.edit-resolved-hide {
+  display: none;
+}
+.edit-resolved-plain {
+  background: transparent;
+  color: inherit;
+  text-decoration: none;
+  font-weight: 400;
+  padding: 0;
 }
 
 .pane-actions {

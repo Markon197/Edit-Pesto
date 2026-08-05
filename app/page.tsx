@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type CheckResult = {
   annotatedHtml: string;
@@ -9,24 +9,19 @@ type CheckResult = {
   people: string[];
 };
 
+type Stats = { total: number; accepted: number; denied: number; pending: number };
+
 function htmlToText(html: string): string {
   const div = document.createElement("div");
   div.innerHTML = html;
   return (div.innerText || div.textContent || "").trim();
 }
 
-function cleanHtmlFrom(sourceHtml: string): string {
-  const div = document.createElement("div");
-  div.innerHTML = sourceHtml;
-  div.querySelectorAll("del").forEach((n) => n.remove());
-  div.querySelectorAll("ins").forEach((n) => n.replaceWith(document.createTextNode(n.textContent || "")));
-  return div.innerHTML;
-}
-
 export default function Home() {
   const inputRef = useRef<HTMLDivElement>(null);
+  const outputRef = useRef<HTMLDivElement>(null);
   const [result, setResult] = useState<CheckResult | null>(null);
-  const [accepted, setAccepted] = useState(false);
+  const [stats, setStats] = useState<Stats>({ total: 0, accepted: 0, denied: 0, pending: 0 });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copiedFlag, setCopiedFlag] = useState<string | null>(null);
@@ -36,12 +31,92 @@ export default function Home() {
     setTimeout(() => setCopiedFlag((cur) => (cur === key ? null : cur)), 1400);
   }
 
+  // Decorate every <del><ins> pair the check produced with its own accept/deny
+  // controls, once, right after new results land in the DOM.
+  useEffect(() => {
+    if (!result || !outputRef.current) {
+      setStats({ total: 0, accepted: 0, denied: 0, pending: 0 });
+      return;
+    }
+    const container = outputRef.current;
+    const dels = Array.from(container.querySelectorAll("del"));
+    let editId = 0;
+    dels.forEach((del) => {
+      const ins = del.nextElementSibling;
+      if (!ins || ins.tagName.toLowerCase() !== "ins") return;
+      const id = String(editId++);
+      del.setAttribute("data-edit-id", id);
+      ins.setAttribute("data-edit-id", id);
+      const controls = document.createElement("span");
+      controls.className = "edit-controls";
+      controls.setAttribute("data-edit-id", id);
+      controls.innerHTML =
+        '<button type="button" class="edit-btn edit-accept" title="Accept this fix">✓</button>' +
+        '<button type="button" class="edit-btn edit-reject" title="Keep original wording">✕</button>';
+      ins.after(controls);
+    });
+    updateStats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [result]);
+
+  function updateStats() {
+    if (!outputRef.current) return;
+    const controls = Array.from(outputRef.current.querySelectorAll<HTMLElement>(".edit-controls"));
+    const total = controls.length;
+    const accepted = controls.filter((c) => c.getAttribute("data-decision") === "accepted").length;
+    const denied = controls.filter((c) => c.getAttribute("data-decision") === "denied").length;
+    setStats({ total, accepted, denied, pending: total - accepted - denied });
+  }
+
+  function resolveEdit(editId: string, decision: "accepted" | "denied") {
+    if (!outputRef.current) return;
+    const del = outputRef.current.querySelector(`del[data-edit-id="${editId}"]`);
+    const ins = outputRef.current.querySelector(`ins[data-edit-id="${editId}"]`);
+    const controls = outputRef.current.querySelector(`.edit-controls[data-edit-id="${editId}"]`);
+    if (!del || !ins || !controls) return;
+    if (decision === "accepted") {
+      del.classList.add("edit-resolved-hide");
+      ins.classList.remove("edit-resolved-hide");
+      ins.classList.add("edit-resolved-plain");
+      del.classList.remove("edit-resolved-plain");
+    } else {
+      ins.classList.add("edit-resolved-hide");
+      del.classList.remove("edit-resolved-hide");
+      del.classList.add("edit-resolved-plain");
+      ins.classList.remove("edit-resolved-plain");
+    }
+    controls.classList.add("edit-done");
+    controls.setAttribute("data-decision", decision);
+  }
+
+  function handleOutputClick(e: React.MouseEvent<HTMLDivElement>) {
+    const target = e.target as HTMLElement;
+    const btn = target.closest(".edit-btn") as HTMLElement | null;
+    if (!btn) return;
+    const controls = btn.closest(".edit-controls") as HTMLElement | null;
+    const editId = controls?.getAttribute("data-edit-id");
+    if (editId == null) return;
+    resolveEdit(editId, btn.classList.contains("edit-accept") ? "accepted" : "denied");
+    updateStats();
+  }
+
+  function acceptAllRemaining() {
+    if (!outputRef.current) return;
+    const pending = Array.from(
+      outputRef.current.querySelectorAll<HTMLElement>(".edit-controls:not(.edit-done)")
+    );
+    pending.forEach((controls) => {
+      const editId = controls.getAttribute("data-edit-id");
+      if (editId != null) resolveEdit(editId, "accepted");
+    });
+    updateStats();
+  }
+
   async function handleCheck() {
     const html = inputRef.current?.innerHTML ?? "";
     if (!html.trim()) return;
     setLoading(true);
     setError(null);
-    setAccepted(false);
     setResult(null);
     try {
       const res = await fetch("/api/check", {
@@ -59,13 +134,37 @@ export default function Home() {
     }
   }
 
-  function currentOutputHtml(): string {
-    if (!result) return "";
-    return accepted ? cleanHtmlFrom(result.annotatedHtml) : result.annotatedHtml;
+  // Resolve the live output DOM into final HTML: accepted/pending edits use
+  // the fix, denied edits keep the original wording. Reads decisions straight
+  // off the DOM so it always matches what's on screen.
+  function resolvedHtml(): string {
+    if (!outputRef.current) return "";
+    const source = outputRef.current;
+    const clone = source.cloneNode(true) as HTMLElement;
+    clone.querySelectorAll(".edit-controls").forEach((n) => n.remove());
+    clone.querySelectorAll("del").forEach((del) => {
+      const id = del.getAttribute("data-edit-id");
+      const decision = id != null ? source.querySelector(`.edit-controls[data-edit-id="${id}"]`)?.getAttribute("data-decision") : null;
+      if (decision === "denied") {
+        del.replaceWith(document.createTextNode(del.textContent || ""));
+      } else {
+        del.remove();
+      }
+    });
+    clone.querySelectorAll("ins").forEach((ins) => {
+      const id = ins.getAttribute("data-edit-id");
+      const decision = id != null ? source.querySelector(`.edit-controls[data-edit-id="${id}"]`)?.getAttribute("data-decision") : null;
+      if (decision === "denied") {
+        ins.remove();
+      } else {
+        ins.replaceWith(document.createTextNode(ins.textContent || ""));
+      }
+    });
+    return clone.innerHTML;
   }
 
   async function copyForCms() {
-    const html = cleanHtmlFrom(result?.annotatedHtml ?? "");
+    const html = resolvedHtml();
     if (!html.trim()) return;
     const text = htmlToText(html);
     try {
@@ -81,7 +180,7 @@ export default function Home() {
   }
 
   async function copyPlainText() {
-    const html = cleanHtmlFrom(result?.annotatedHtml ?? "");
+    const html = resolvedHtml();
     if (!html.trim()) return;
     await navigator.clipboard.writeText(htmlToText(html));
     flash("plain");
@@ -98,7 +197,12 @@ export default function Home() {
     flash("h-" + headline);
   }
 
-  const editCount = result ? (result.annotatedHtml.match(/<ins[\s>]/g) || []).length : 0;
+  let countLabel = "";
+  if (result) {
+    if (stats.total === 0) countLabel = "No issues found";
+    else if (stats.pending === 0) countLabel = "All edits reviewed";
+    else countLabel = `${stats.pending} of ${stats.total} edit${stats.total === 1 ? "" : "s"} need review`;
+  }
 
   return (
     <>
@@ -135,29 +239,19 @@ export default function Home() {
           <div className="pane">
             <div className="pane-head">
               <h2>Ready to publish</h2>
-              <span className="count">
-                {!result
-                  ? ""
-                  : accepted
-                  ? "All edits accepted"
-                  : editCount === 0
-                  ? "No issues found"
-                  : `${editCount} edit${editCount === 1 ? "" : "s"} found`}
-              </span>
+              <span className="count">{countLabel}</span>
             </div>
             <div
-              className={`output-body${accepted ? " clean" : ""}`}
-              data-placeholder="Your checked article will appear here."
-              dangerouslySetInnerHTML={{ __html: currentOutputHtml() }}
+              ref={outputRef}
+              className="output-body"
+              data-placeholder="Your checked article will appear here. Each fix gets its own ✓ accept / ✕ keep-original buttons."
+              onClick={handleOutputClick}
+              dangerouslySetInnerHTML={{ __html: result?.annotatedHtml ?? "" }}
             />
             <div className="pane-actions">
               {error && <div className="error-banner">{error}</div>}
-              <button
-                className="btn-primary"
-                onClick={() => setAccepted(true)}
-                disabled={!result || editCount === 0 || accepted}
-              >
-                Accept all edits
+              <button className="btn-primary" onClick={acceptAllRemaining} disabled={!result || stats.pending === 0}>
+                Accept all remaining edits
               </button>
               <button className="btn-ghost" onClick={copyForCms} disabled={!result}>
                 Copy for CMS

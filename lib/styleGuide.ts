@@ -150,7 +150,10 @@ RULES
 4. The input is an HTML fragment. Every HTML tag - links (and their href), bold, italics, paragraphs, lists - is structural and must be preserved exactly. Never add, remove, or change a tag or an href. Only the visible text may be edited.
 5. For every change, wrap the exact original text in <del> and your replacement in <ins>, placed immediately next to each other, e.g. "sever<del>ve</del><ins>e</ins> storms". Keep each <del>/<ins> pair as small and localised as possible - never wrap a whole sentence for a one-word fix. Everything you did not change must appear in the output completely unmodified, including all surrounding tags and whitespace.
 6. If the article has no errors at all, return annotated_html identical to the input with no <del>/<ins> tags.
-7. Also extract, from the article text: five alternative headline options (distinct from any headline already present, matching InsuranceERM's factual, specific tone - no puns, no clickbait), every company mentioned (deduplicated, full name as it first appears), and every named person mentioned (deduplicated, full name).
+7. Also extract, from the article text: five alternative headlines, every company mentioned (deduplicated, full name as it first appears), and every named person mentioned (deduplicated, full name).
+
+HEADLINE STYLE
+Write headlines with more edge than a flat, descriptive summary - lead with the sharpest angle in the story and reach for strong, concrete verbs ("collapse", "surge", "warns", "faces", "at risk") instead of passive or vague ones ("is", "sees", "related to"). Every word must still be fully supported by the article - no exaggeration, no speculation, no invented numbers or outcomes. This is provocative, not clickbait: no puns, no vague teases ("you won't believe..."), no withholding the subject. A reader should know exactly what happened from the headline alone, just told with more force. Apply the style guide below (capitalisation, abbreviations, currency formatting) exactly as in body text. Each of the five headlines should be distinct from the others and from any headline already in the article.
 
 STYLE GUIDE
 ${STYLE_GUIDE}
