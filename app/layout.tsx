@@ -3,8 +3,10 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "PestoBot",
-  description: "Final proofing pass for InsuranceERM articles.",
+  description: "A final proofing pass before publishing.",
 };
+
+const THEME_INIT_SCRIPT = `(function(){try{var t=localStorage.getItem('pestobot-theme');if(t==='dark'){document.documentElement.setAttribute('data-theme','dark');}}catch(e){}})();`;
 
 export default function RootLayout({
   children,
@@ -13,7 +15,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        {/* Runs before paint so a returning dark-mode visitor never sees a
+            flash of the light theme. Static string, no user input. */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        {children}
+      </body>
     </html>
   );
 }
