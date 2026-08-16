@@ -9,9 +9,9 @@ export const maxDuration = 60;
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-// Generous enough for a long AI-generated events list or a copied
-// conference schedule, bounded so one paste can't run away with cost/time.
-const MAX_TEXT_LENGTH = 12000;
+// This is used rarely, so the limit is generous — mainly a backstop against
+// a truly runaway paste rather than a real practical ceiling.
+const MAX_TEXT_LENGTH = 60000;
 
 export async function POST(req: NextRequest) {
   if (!process.env.ANTHROPIC_API_KEY) {
@@ -44,7 +44,10 @@ export async function POST(req: NextRequest) {
 
     const message = await anthropic.messages.create({
       model: "claude-sonnet-5",
-      max_tokens: 4096,
+      // Higher than the scans' 4096 — a long paste can reasonably contain
+      // several dozen events, and every one of them should come back, not
+      // just the first handful.
+      max_tokens: 8192,
       system:
         "You are a careful assistant that extracts and formats calendar events from text the user provides. Only use what's in the text — never invent dates or details.",
       tools: [SUBMIT_IMPORT_TOOL],

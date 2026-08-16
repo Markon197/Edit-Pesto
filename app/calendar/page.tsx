@@ -718,36 +718,38 @@ export default function CalendarPage() {
                           `Only covers ${formatDateRange(todayIsoStr, st.windowEndISO || todayIsoStr)} — nothing further out shows here. `}
                         Already-added items are left out automatically.
                       </p>
-                      {st.candidates!.map((c) => {
-                        const key = c.title + c.startDate;
-                        const added = st.addedKeys.has(key);
-                        return (
-                          <div className="scan-result" key={key}>
-                            <div className="info">
-                              {c.tag && (
-                                <span className={`tag-pill ${c.tag}`} style={{ marginTop: 0, marginRight: 4 }}>
-                                  {TAG_LABELS[c.tag]}
+                      <div className="scan-results-list">
+                        {st.candidates!.map((c) => {
+                          const key = c.title + c.startDate;
+                          const added = st.addedKeys.has(key);
+                          return (
+                            <div className="scan-result" key={key}>
+                              <div className="info">
+                                {c.tag && (
+                                  <span className={`tag-pill ${c.tag}`} style={{ marginTop: 0, marginRight: 4 }}>
+                                    {TAG_LABELS[c.tag]}
+                                  </span>
+                                )}
+                                <strong>{c.title}</strong>{" "}
+                                <span className="d">
+                                  — {formatDateRange(c.startDate, c.endDate)}
+                                  {c.time ? `, ${formatTime(c.time)}` : ""}
+                                  {c.location ? `, ${c.location}` : ""}
                                 </span>
-                              )}
-                              <strong>{c.title}</strong>{" "}
-                              <span className="d">
-                                — {formatDateRange(c.startDate, c.endDate)}
-                                {c.time ? `, ${formatTime(c.time)}` : ""}
-                                {c.location ? `, ${c.location}` : ""}
-                              </span>
-                              {c.description && <div className="desc">{c.description}</div>}
+                                {c.description && <div className="desc">{c.description}</div>}
+                              </div>
+                              <button
+                                className="add-btn"
+                                disabled={added}
+                                onClick={() => addCandidate(kind, c)}
+                                aria-label={`Add ${c.title} to the calendar`}
+                              >
+                                {added ? "✓" : "+"}
+                              </button>
                             </div>
-                            <button
-                              className="add-btn"
-                              disabled={added}
-                              onClick={() => addCandidate(kind, c)}
-                              aria-label={`Add ${c.title} to the calendar`}
-                            >
-                              {added ? "✓" : "+"}
-                            </button>
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
                     </>
                   ))}
               </div>
@@ -1139,7 +1141,7 @@ export default function CalendarPage() {
           className="modal-overlay"
           onClick={(e) => e.target === e.currentTarget && setShowImportForm(false)}
         >
-          <div className="modal modal-wide">
+          <div className="modal modal-wide" style={{ maxWidth: 720 }}>
             <h3>Import events</h3>
             <p style={{ fontSize: ".88rem", color: "var(--ink-soft)", marginTop: 0 }}>
               Paste raw text — a press release, an AI-generated list, a copied schedule, rough notes — and it'll be
@@ -1150,10 +1152,10 @@ export default function CalendarPage() {
               value={importText}
               onChange={(e) => setImportText(e.target.value)}
               placeholder="Paste text here…"
-              maxLength={12000}
+              maxLength={60000}
               style={{
                 width: "100%",
-                minHeight: 220,
+                minHeight: 440,
                 fontFamily: "inherit",
                 fontSize: ".9rem",
                 padding: "8px 10px",

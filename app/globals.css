@@ -1085,6 +1085,14 @@ button.action:disabled {
   color: var(--ink-soft);
   margin: 0 0 10px;
 }
+/* Scrollable, not open-ended — a big import or a busy scan can turn up
+   dozens of candidates, and the page shouldn't have to grow to fit all of
+   them (the same reasoning as the Upcoming list and week-day agenda). */
+.scan-results-list {
+  max-height: 480px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
 .scan-result {
   display: flex;
   justify-content: space-between;

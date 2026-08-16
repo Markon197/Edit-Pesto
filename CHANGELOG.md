@@ -2,6 +2,11 @@
 
 Every shipped change bumps `APP_VERSION` in [lib/version.ts](lib/version.ts) (shown in the masthead) and gets a line here, so it's obvious at a glance whether the live site reflects the latest request.
 
+## Version 14 — 2026-08-16
+- Import events: paste box is much bigger (220px → 440px tall, modal widened to fit) and the limit raised from 12,000 to 60,000 characters — it's used rarely, so no need to keep it tight.
+- The AI was told, in effect, to just give a representative sample rather than everything — reworded the prompt to be explicit that there's no cap and no target count: 3 in, 3 out; 80 in, 80 out. Also raised the response's own token budget (4096 → 8192) so a long list has room to actually come back in full rather than getting cut off.
+- All scan/import results (not just imports) now sit in a scrollable list capped at 480px instead of growing the page to fit however many came back — same fix as the Upcoming list a few versions back, applied here too.
+
 ## Version 13 — 2026-08-16
 - **Fixed the week view's "next" arrow** getting stuck instead of advancing (previous worked fine). Root cause: the new week-nav date math parsed dates in local time but read them back out in UTC, which silently shifts the date by a day for anyone in a positive UTC offset (the UK, whenever BST is in effect) — and since the week snaps to Monday on every click, that error compounded and could make forward clicks loop in place. Fixed by keeping the whole calculation in UTC throughout, the same approach already used for .ics export.
 - **New: Import events.** A button next to "+ Add event" opens a paste box — drop in raw text, a press release, an AI-generated list, a copied schedule, whatever you've got — and it reads through it and proposes a list of events (title, date, time if given, a guessed tag, description) that you review and add one by one, exactly like a scan's results. No web search involved, so it's fast and immune to the scan timeout issue.
