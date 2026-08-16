@@ -694,9 +694,15 @@ button.action:disabled {
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: 20px;
-  /* stretch (the default) so both panes match height — the Upcoming list
-     fills the same vertical space as the calendar instead of shrinking to
-     fit its own content. */
+  /* NOT stretch: CSS Grid's auto-height row sizing uses items' natural
+     content height even for a flexed/overflow-y:auto child, so letting the
+     Upcoming list "stretch" here just made both panes balloon to fit every
+     event instead of scrolling. Both panes keep their own natural height;
+     the Upcoming pane's max-height is set to match the calendar's actual
+     rendered height in JS (see the ResizeObserver in app/calendar/page.tsx),
+     which is the only way to cap it without either hardcoding a magic
+     number or re-triggering the same circular growth. */
+  align-items: start;
 }
 @media (max-width: 920px) {
   .cal-workspace {
@@ -749,10 +755,10 @@ button.action:disabled {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   /* Fixed, not content-sized: every week is exactly the same height,
-     whatever it holds — a header row, 2 event-bar lanes, and a row for
+     whatever it holds — a header row, 3 event-bar lanes, and a row for
      "+N more" that's just empty when there's nothing to overflow. This
      is what keeps the whole grid the same size every month. */
-  grid-template-rows: 40px repeat(2, 26px) 20px;
+  grid-template-rows: 40px repeat(3, 24px) 18px;
   border: 1px solid var(--line);
   border-top: none;
 }
@@ -808,10 +814,26 @@ button.action:disabled {
 }
 .cal-bar-overflow {
   margin: 1px 3px;
-  padding: 1px 6px;
+  padding: 1px 7px;
   font-size: 0.68rem;
-  font-style: italic;
-  color: var(--ink-soft);
+  font-weight: 700;
+  color: var(--navy);
+  background: var(--navy-tint);
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  width: fit-content;
+  cursor: pointer;
+}
+.cal-bar-overflow:hover {
+  background: var(--navy);
+  color: var(--panel);
+}
+.cal-bar-overflow::before {
+  content: "●●●";
+  font-size: 0.5rem;
+  letter-spacing: 1px;
 }
 .dot {
   width: 8px;

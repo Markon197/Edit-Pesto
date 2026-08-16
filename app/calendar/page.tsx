@@ -129,10 +129,10 @@ function buildWeeks(year: number, month: number): Week[] {
 
 type Bar = { event: CalendarEvent; startCol: number; endCol: number; lane: number };
 
-// Fixed at 2 so every week reserves exactly the same height: a header row,
-// 2 bar lanes, and one more row that's either blank or a "+N more" — never
+// Fixed at 3 so every week reserves exactly the same height: a header row,
+// 3 bar lanes, and one more row that's either blank or a "+N more" — never
 // taller just because that particular week happens to be busy.
-const MAX_LANES_PER_WEEK = 2;
+const MAX_LANES_PER_WEEK = 3;
 
 function layoutWeek(week: Week, events: CalendarEvent[]): { bars: Bar[]; overflowCount: number } {
   const real = week.cells.filter((c): c is { day: number; iso: string } => c !== null);
@@ -185,6 +185,24 @@ export default function CalendarPage() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loadingEvents, setLoadingEvents] = useState(true);
   const [listError, setListError] = useState<string | null>(null);
+
+  // The Upcoming pane is capped to the calendar pane's actual rendered
+  // height and scrolls internally, rather than growing to fit every event.
+  // This can't be done with CSS alone: a plain "stretch" grid row sizes
+  // itself to the tallest item's natural content height, and an
+  // overflow-y:auto list still counts as "tall" for that purpose — so both
+  // panes just ballooned together to fit all events instead of one of them
+  // scrolling. Measuring the calendar pane directly sidesteps that.
+  const calPaneRef = useRef<HTMLDivElement>(null);
+  const [calHeight, setCalHeight] = useState<number | null>(null);
+  useEffect(() => {
+    if (!calPaneRef.current) return;
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) setCalHeight(entry.contentRect.height);
+    });
+    ro.observe(calPaneRef.current);
+    return () => ro.disconnect();
+  }, []);
 
   const today = useMemo(() => new Date(), []);
   const [viewYear, setViewYear] = useState(today.getFullYear());
@@ -578,7 +596,7 @@ export default function CalendarPage() {
         {listError && <div className="error-banner">{listError}</div>}
 
         <section className="cal-workspace">
-          <div className="pane">
+          <div className="pane" ref={calPaneRef}>
             <div className="pane-head">
               <h2>
                 {MONTH_NAMES[viewMonth]} {viewYear}
@@ -624,7 +642,12 @@ export default function CalendarPage() {
                       </div>
                     ))}
                     {overflowCount > 0 && (
-                      <div className="cal-bar-overflow" style={{ gridColumn: "1 / 8", gridRow: MAX_LANES_PER_WEEK + 2 }}>
+                      <div
+                        className="cal-bar-overflow"
+                        style={{ gridColumn: "1 / 8", gridRow: MAX_LANES_PER_WEEK + 2 }}
+                        onClick={() => setShowAllEvents(true)}
+                        title="See all events"
+                      >
                         +{overflowCount} more this week
                       </div>
                     )}
@@ -648,7 +671,7 @@ export default function CalendarPage() {
             </div>
           </div>
 
-          <div className="pane">
+          <div className="pane" style={calHeight ? { maxHeight: calHeight } : undefined}>
             <div className="pane-head">
               <h2>Upcoming</h2>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>

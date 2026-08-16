@@ -2,6 +2,12 @@
 
 Every shipped change bumps `APP_VERSION` in [lib/version.ts](lib/version.ts) (shown in the masthead) and gets a line here, so it's obvious at a glance whether the live site reflects the latest request.
 
+## Version 11 — 2026-08-16
+- **Scan timeouts**: scans were occasionally hitting Vercel's hard function time limit (504) after already spending the API call — the search budget per scan (6 for events, 5 for earnings) was too high for the 60-second ceiling. Cut to 4 and 3 respectively, and told the model explicitly to work quickly rather than double-checking things a broad search already covered. Should fail far less often; if it still happens occasionally, that's the absolute ceiling on Vercel's side, not something the app can retry around.
+- Calendar rows show 3 events per day now (was 2), with a bigger row height to fit.
+- The "+N more this week" overflow badge is now an actual visible pill (not faint italic grey text) and clicking it opens the full "See all" list.
+- **Fixed the Upcoming list actually growing to fit every event** instead of scrolling — the "equal height panes" CSS trick from Version 9 turned out to size both panes to the tallest one's full, unclipped content, so a busy calendar with 20+ events just made the whole page longer. The Upcoming pane's height is now measured directly off the calendar pane's rendered size and applied as a cap, so it always matches the calendar and scrolls internally past that.
+
 ## Version 10 — 2026-08-16
 - **Fixed a crash on scan errors**: if a scan request ever came back as a non-JSON response (e.g. a Vercel timeout page), the app tried to `JSON.parse` it directly and threw an ugly, uncaught error. All fetches (Edit tab, Calendar, Stats) now go through a shared `fetchJson` helper that reads the response safely first and always surfaces a clean, readable error message instead of crashing.
 - **Fixed the calendar's grid lines**: the vertical lines between day columns were only drawing next to the date number, not running the full height of the week row, so the grid looked broken/incomplete. They now run edge-to-edge like a proper spreadsheet or Google Calendar.

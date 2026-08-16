@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
       // web_search is a server tool with a different shape than a custom
       // function tool (no input_schema), so the SDK's Tool type doesn't
       // cover it — type the array loosely rather than per-element.
-      tools: [webSearchTool(5), SUBMIT_EARNINGS_TOOL] as unknown as Anthropic.Tool[],
+      tools: [webSearchTool(3), SUBMIT_EARNINGS_TOOL] as unknown as Anthropic.Tool[],
       tool_choice: { type: "auto" },
       messages: [{ role: "user", content: buildEarningsScanPrompt(todayISO, windowEndISO, existingTitles, focus) }],
     });

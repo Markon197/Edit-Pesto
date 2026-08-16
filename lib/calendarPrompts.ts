@@ -84,7 +84,7 @@ export function buildEventsScanPrompt(todayISO: string, existingTitles: string[]
 
 Search the web and find at least 5 upcoming conferences, summits, or industry gatherings relevant to insurance and reinsurance professionals over the next 9 months from today. Prioritise events relevant to a UK/European audience (e.g. Monte Carlo Rendez-Vous, Baden-Baden Meeting, Dive In Festival, Insurtech Insights, British Insurance Awards) but also include major international events when they're significant enough to matter to this audience (e.g. ICA, APIF, RIMS, major regulator conferences in Asia or North America).
 
-You have a limited number of searches (about 6) — spend them on broad queries that surface several events at once (e.g. "insurance industry conferences 2026 2027", "reinsurance conferences UK Europe 2026") rather than one search per event. Only search individually for a specific event's exact dates if a broad search didn't already give you one.
+You have a limited number of searches (about 4) — spend them on broad queries that surface several events at once (e.g. "insurance industry conferences 2026 2027", "reinsurance conferences UK Europe 2026") rather than one search per event. Only search individually for a specific event's exact dates if a broad search didn't already give you one. Work quickly — this has a hard time limit, so don't spend extra turns double-checking things a broad search already answered well enough.
 
 Do not include any of the following — they are already on the calendar: ${exclude}
 
@@ -104,7 +104,7 @@ export function buildEarningsScanPrompt(
 
 Find major insurance and reinsurance companies relevant to a UK/European trade audience (e.g. Aviva, Zurich, Allianz, AXA, Munich Re, Swiss Re, Beazley, Hiscox, Lloyd's market participants, Prudential, Legal & General, Chubb, and other large listed insurers when relevant) that are scheduled to report earnings between ${todayISO} and ${windowEndISO} inclusive — a strict two-week window. Do not include anything reporting outside that window, even if it's close.
 
-You have a limited number of searches (about 5) — do NOT search for each company individually. Instead use broad queries first (e.g. "insurance company earnings calendar this week", "insurer results dates ${todayISO.slice(0, 7)}") to find several at once, and only fall back to a single company-specific search if one broad result looks promising but needs confirming.
+You have a limited number of searches (about 3) — do NOT search for each company individually. Instead use broad queries first (e.g. "insurance company earnings calendar this week", "insurer results dates ${todayISO.slice(0, 7)}") to find several at once, and only fall back to a single company-specific search if one broad result looks promising but needs confirming. Work quickly — this has a hard time limit, so don't spend extra turns double-checking things a broad search already answered well enough.
 
 Do not include any of the following — they are already on the calendar: ${exclude}
 
