@@ -23,6 +23,13 @@
   --earn-tint: #f3e6d4;
   --holiday: #8a2f45;
   --holiday-tint: #f5e3e8;
+  --webinar: #1f7a72;
+  --webinar-tint: #e2f0ee;
+  /* InsuranceERM's own events get a deliberately warmer, brighter accent
+     than the rest of the palette — they're the ones the team most needs
+     to spot at a glance. */
+  --ierm: #96650c;
+  --ierm-tint: #f7ecd3;
   --today-tint: #f4e3c2;
   --error-bg: #f6e6e2;
   --error-ink: #8a3b2c;
@@ -53,6 +60,10 @@
   --earn-tint: #332616;
   --holiday: #d98ca3;
   --holiday-tint: #362128;
+  --webinar: #6bc4bb;
+  --webinar-tint: #1a2e2b;
+  --ierm: #e0b24d;
+  --ierm-tint: #3a2f14;
   --today-tint: #3a3018;
   --error-bg: #362521;
   --error-ink: #d99c8c;
@@ -634,6 +645,39 @@ button:disabled {
   flex-wrap: wrap;
   margin-bottom: 18px;
 }
+.filter-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: -8px 0 18px;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+.filter-row-label {
+  font-style: italic;
+}
+.tag-filter-chip {
+  cursor: pointer;
+  border: 1px solid transparent;
+  font-family: inherit;
+  transition: opacity 0.15s;
+  margin-top: 0;
+}
+.tag-filter-chip.off {
+  opacity: 0.35;
+  filter: grayscale(0.5);
+}
+.tag-filter-clear {
+  background: none;
+  border: none;
+  color: var(--navy);
+  font-size: 0.78rem;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+}
 .scan-menu-wrap {
   position: relative;
   display: inline-block;
@@ -675,6 +719,20 @@ button:disabled {
 }
 .scan-menu button + button {
   border-top: 1px solid var(--line);
+}
+.scan-menu button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.scan-menu button:disabled:hover {
+  background: transparent;
+}
+.scan-menu-note {
+  font-size: 0.72rem;
+  font-weight: 400;
+  font-style: italic;
+  display: block;
+  margin-top: 1px;
 }
 button.action {
   font-family: Georgia, "Times New Roman", serif;
@@ -894,6 +952,16 @@ button.action:disabled {
 .cal-bar.holiday {
   background: var(--holiday);
 }
+.cal-bar.webinar {
+  background: var(--webinar);
+}
+/* InsuranceERM's own events: same bar shape as everything else, but a
+   bright accent plus a light inset ring so it reads as "ours" at a glance
+   against the rest of the month grid. */
+.cal-bar.insuranceerm {
+  background: var(--ierm);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+}
 .cal-bar-overflow {
   margin: 1px 3px;
   padding: 1px 7px;
@@ -934,6 +1002,12 @@ button.action:disabled {
 }
 .dot.holiday {
   background: var(--holiday);
+}
+.dot.webinar {
+  background: var(--webinar);
+}
+.dot.insuranceerm {
+  background: var(--ierm);
 }
 .cal-legend {
   display: flex;
@@ -1017,6 +1091,27 @@ button.action:disabled {
 .tag-pill.holiday {
   background: var(--holiday-tint);
   color: var(--holiday);
+}
+.tag-pill.webinar {
+  background: var(--webinar-tint);
+  color: var(--webinar);
+}
+/* The one tag-pill with a border — a small, deliberate "highlight" so
+   InsuranceERM's own events stand out from the rest of the tag set, not
+   just another color in the row. */
+.tag-pill.insuranceerm {
+  background: var(--ierm-tint);
+  color: var(--ierm);
+  border: 1px solid var(--ierm);
+}
+
+/* Events on InsuranceERM's own calendar get a light tint + accent border
+   wherever they appear as a card, so they're easy to spot in a scrolling
+   list without having to read the pill. Progressive enhancement — browsers
+   without :has() just show the plain card, nothing breaks. */
+.event-card:has(.tag-pill.insuranceerm) {
+  background: var(--ierm-tint);
+  border-left: 3px solid var(--ierm);
 }
 
 .scan-panel {

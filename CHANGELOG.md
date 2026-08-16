@@ -2,6 +2,11 @@
 
 Every shipped change bumps `APP_VERSION` in [lib/version.ts](lib/version.ts) (shown in the masthead) and gets a line here, so it's obvious at a glance whether the live site reflects the latest request.
 
+## Version 15 — 2026-08-16
+- **Two new tags**: "InsuranceERM Event" and "Webinar". InsuranceERM's own events get a deliberately different treatment from the rest of the tag set — a warm gold/amber accent, a bordered pill (the only tag pill with one), and a tinted background + accent stripe wherever they show up as a card — so they're easy to pick out at a glance from third-party events.
+- **Tag filter**: a row of toggleable chips ("Show: Industry event · Earnings · Editorial · Bank Holiday · InsuranceERM Event · Webinar") above the calendar. Click a tag to hide it — everywhere events show up (month grid, week view, Upcoming, See all) respects it, not just one list. "Show all" resets it.
+- **The two AI web-search scans (industry events, earnings calendar) are temporarily disabled** — greyed out in the Scan menu with a "Temporarily disabled" note, while their cost/reliability gets revisited. UK bank holidays and Import events are untouched, since neither uses web search. One flag in the code (`SCANS_DISABLED`) re-enables both when ready.
+
 ## Version 14 — 2026-08-16
 - Import events: paste box is much bigger (220px → 440px tall, modal widened to fit) and the limit raised from 12,000 to 60,000 characters — it's used rarely, so no need to keep it tight.
 - The AI was told, in effect, to just give a representative sample rather than everything — reworded the prompt to be explicit that there's no cap and no target count: 3 in, 3 out; 80 in, 80 out. Also raised the response's own token budget (4096 → 8192) so a long list has room to actually come back in full rather than getting cut off.

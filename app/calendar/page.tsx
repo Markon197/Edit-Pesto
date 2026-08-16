@@ -33,6 +33,12 @@ type ScanState = {
 
 const EMPTY_SCAN: ScanState = { loading: false, candidates: null, addedKeys: new Set(), error: null };
 
+// Temporary: the two AI web-search scans (industry events, earnings) are
+// switched off site-wide while their cost/reliability is being revisited.
+// Bank holidays and Import events are unaffected — neither uses web_search.
+// Flip back to false to re-enable.
+const SCANS_DISABLED = true;
+
 const SCAN_CONFIG: Record<ScanKind, { url: string; tag: EventTag; buttonLabel: string; loadingLabel: string }> = {
   event: {
     url: "/api/scan/events",
@@ -246,6 +252,23 @@ export default function CalendarPage() {
   const [loadingEvents, setLoadingEvents] = useState(true);
   const [listError, setListError] = useState<string | null>(null);
 
+  // Tags start all-visible; toggling one off hides it everywhere events are
+  // shown (month grid, week agenda, Upcoming, See all) — not just a list
+  // filter tacked onto one view.
+  const [hiddenTags, setHiddenTags] = useState<Set<EventTag>>(new Set());
+  function toggleTagFilter(tag: EventTag) {
+    setHiddenTags((cur) => {
+      const next = new Set(cur);
+      if (next.has(tag)) next.delete(tag);
+      else next.add(tag);
+      return next;
+    });
+  }
+  const visibleEvents = useMemo(
+    () => events.filter((ev) => !hiddenTags.has(ev.tag)),
+    [events, hiddenTags]
+  );
+
   // The Upcoming pane is capped to the calendar pane's actual rendered
   // height and scrolls internally, rather than growing to fit every event.
   // This can't be done with CSS alone: a plain "stretch" grid row sizes
@@ -357,7 +380,7 @@ export default function CalendarPage() {
   }
 
   const weeks = useMemo(() => buildWeeks(viewYear, viewMonth), [viewYear, viewMonth]);
-  const weekLayouts = useMemo(() => weeks.map((w) => layoutWeek(w, events)), [weeks, events]);
+  const weekLayouts = useMemo(() => weeks.map((w) => layoutWeek(w, visibleEvents)), [weeks, visibleEvents]);
 
   const weekStart = useMemo(() => mondayOf(weekAnchor), [weekAnchor]);
   const weekDates = useMemo(() => weekDatesFrom(weekStart), [weekStart]);
@@ -365,7 +388,7 @@ export default function CalendarPage() {
     () =>
       weekDates.map((iso) => ({
         iso,
-        events: events
+        events: visibleEvents
           .filter((ev) => ev.startDate <= iso && (ev.endDate || ev.startDate) >= iso)
           .sort((a, b) => {
             if (!a.time && !b.time) return a.title.localeCompare(b.title);
@@ -374,19 +397,19 @@ export default function CalendarPage() {
             return a.time.localeCompare(b.time) || a.title.localeCompare(b.title);
           }),
       })),
-    [weekDates, events]
+    [weekDates, visibleEvents]
   );
 
   const upcoming = useMemo(() => {
     const t = todayISO();
-    return events
+    return visibleEvents
       .filter((ev) => (ev.endDate || ev.startDate) >= t)
       .sort((a, b) => a.startDate.localeCompare(b.startDate));
-  }, [events]);
+  }, [visibleEvents]);
 
   const allEventsSorted = useMemo(
-    () => [...events].sort((a, b) => a.startDate.localeCompare(b.startDate)),
-    [events]
+    () => [...visibleEvents].sort((a, b) => a.startDate.localeCompare(b.startDate)),
+    [visibleEvents]
   );
 
   function openAddForm() {
@@ -633,22 +656,28 @@ export default function CalendarPage() {
                 <div className="scan-menu-backdrop" onClick={() => setScanMenuOpen(false)} />
                 <div className="scan-menu">
                   <button
+                    disabled={SCANS_DISABLED}
                     onClick={() => {
+                      if (SCANS_DISABLED) return;
                       setScanMenuOpen(false);
                       setCustomizeText("");
                       setCustomizeKind("event");
                     }}
                   >
                     🔍 Scan insurance events
+                    {SCANS_DISABLED && <span className="scan-menu-note">Temporarily disabled</span>}
                   </button>
                   <button
+                    disabled={SCANS_DISABLED}
                     onClick={() => {
+                      if (SCANS_DISABLED) return;
                       setScanMenuOpen(false);
                       setCustomizeText("");
                       setCustomizeKind("earnings");
                     }}
                   >
                     🔍 Scan earnings calendar
+                    {SCANS_DISABLED && <span className="scan-menu-note">Temporarily disabled</span>}
                   </button>
                   <button
                     onClick={() => {
@@ -662,6 +691,26 @@ export default function CalendarPage() {
               </>
             )}
           </div>
+        </div>
+
+        <div className="filter-row">
+          <span className="filter-row-label">Show:</span>
+          {EVENT_TAGS.map((tag) => (
+            <button
+              key={tag}
+              className={`tag-pill tag-filter-chip ${tag}${hiddenTags.has(tag) ? " off" : ""}`}
+              onClick={() => toggleTagFilter(tag)}
+              aria-pressed={!hiddenTags.has(tag)}
+              title={hiddenTags.has(tag) ? `Show ${TAG_LABELS[tag]}` : `Hide ${TAG_LABELS[tag]}`}
+            >
+              {TAG_LABELS[tag]}
+            </button>
+          ))}
+          {hiddenTags.size > 0 && (
+            <button className="tag-filter-clear" onClick={() => setHiddenTags(new Set())}>
+              Show all
+            </button>
+          )}
         </div>
 
         {activeScanPanel &&
@@ -872,18 +921,11 @@ export default function CalendarPage() {
               </div>
             )}
             <div className="cal-legend">
-              <span>
-                <span className="dot event" /> Industry event
-              </span>
-              <span>
-                <span className="dot earnings" /> Earnings
-              </span>
-              <span>
-                <span className="dot editorial" /> Editorial
-              </span>
-              <span>
-                <span className="dot holiday" /> Bank Holiday
-              </span>
+              {EVENT_TAGS.map((tag) => (
+                <span key={tag}>
+                  <span className={`dot ${tag}`} /> {TAG_LABELS[tag]}
+                </span>
+              ))}
             </div>
           </div>
 
@@ -928,7 +970,10 @@ export default function CalendarPage() {
       {showAllEvents && (
         <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setShowAllEvents(false)}>
           <div className="modal modal-wide">
-            <h3>All events ({events.length})</h3>
+            <h3>
+              All events ({allEventsSorted.length}
+              {hiddenTags.size > 0 ? ` of ${events.length}` : ""})
+            </h3>
             <ul className="event-list event-list-modal">
               {allEventsSorted.map((ev) => (
                 <li

@@ -1,7 +1,7 @@
 // Shared types for the Calendar tab. Kept in one place so the API routes,
 // the DB layer, and the UI all agree on what a tag is.
 
-export const EVENT_TAGS = ["event", "earnings", "editorial", "holiday"] as const;
+export const EVENT_TAGS = ["event", "earnings", "editorial", "holiday", "insuranceerm", "webinar"] as const;
 export type EventTag = (typeof EVENT_TAGS)[number];
 
 export const TAG_LABELS: Record<EventTag, string> = {
@@ -9,6 +9,8 @@ export const TAG_LABELS: Record<EventTag, string> = {
   earnings: "Earnings",
   editorial: "Editorial",
   holiday: "Bank Holiday",
+  insuranceerm: "InsuranceERM Event",
+  webinar: "Webinar",
 };
 
 export function isEventTag(value: unknown): value is EventTag {

@@ -97,9 +97,9 @@ export const SUBMIT_IMPORT_TOOL = {
             title: { type: "string" },
             tag: {
               type: "string",
-              enum: ["event", "earnings", "editorial", "holiday"],
+              enum: ["event", "earnings", "editorial", "holiday", "insuranceerm", "webinar"],
               description:
-                "Best-fitting category: 'event' (industry conference/gathering), 'earnings' (a company results date), 'editorial' (an internal deadline/publishing date), 'holiday' (a public holiday).",
+                "Best-fitting category: 'event' (industry conference/gathering), 'earnings' (a company results date), 'editorial' (an internal deadline/publishing date), 'holiday' (a public holiday), 'insuranceerm' (an event run by InsuranceERM itself, not a third party), 'webinar' (an online webinar/webcast).",
             },
             startDate: { type: "string", description: "YYYY-MM-DD" },
             endDate: {
@@ -171,9 +171,9 @@ export function buildImportPrompt(todayISO: string, rawText: string, existingTit
   const exclude = existingTitles.length ? existingTitles.join("; ") : "(nothing yet)";
   return `You are helping InsuranceERM's editorial team import events into their calendar from pasted text — which might be a press release, an AI-generated list, a copied table, or rough notes. Today's date is ${todayISO}.
 
-Read the text below and extract EVERY distinct dated event, earnings date, editorial deadline, or holiday it mentions — there is no cap and no target count. If it contains 3, submit 3; if it contains 80, submit all 80. Do not stop early, sample, or only return "the top few" — the whole point is to save the person reading this from typing in each one by hand, so a partial list defeats the purpose. For each one:
+Read the text below and extract EVERY distinct dated event, earnings date, editorial deadline, holiday, or webinar it mentions — there is no cap and no target count. If it contains 3, submit 3; if it contains 80, submit all 80. Do not stop early, sample, or only return "the top few" — the whole point is to save the person reading this from typing in each one by hand, so a partial list defeats the purpose. For each one:
 - Give an exact date in YYYY-MM-DD. If the text gives a relative date (e.g. "next Tuesday", "in three weeks"), work it out from today's date. Never invent a date that isn't stated or clearly computable from what's given.
-- Pick the best-fitting tag: "event" (industry conference/gathering), "earnings" (a company results date), "editorial" (an internal deadline/publishing date), or "holiday" (a public holiday).
+- Pick the best-fitting tag: "event" (industry conference/gathering), "earnings" (a company results date), "editorial" (an internal deadline/publishing date), "holiday" (a public holiday), "insuranceerm" (an event run by InsuranceERM itself), or "webinar" (an online webinar/webcast).
 - Include a start time (HH:MM, 24-hour) only if the text actually gives one.
 - Write a one-sentence factual description drawn from the text — don't pad it with invented detail.
 - Include a link only if a URL is actually present in the text for that item.
