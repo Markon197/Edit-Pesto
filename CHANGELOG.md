@@ -2,6 +2,10 @@
 
 Every shipped change bumps `APP_VERSION` in [lib/version.ts](lib/version.ts) (shown in the masthead) and gets a line here, so it's obvious at a glance whether the live site reflects the latest request.
 
+## Version 3 — 2026-08-05
+- Dark mode shows a small italic "Nut Free" label next to the logo (pesto usually has pine nuts) — a dark-mode-only easter egg.
+- Stronger contrast on the accepted-edit (green/bold) highlight color in both themes, so it reads more clearly against normal body text.
+
 ## Version 2 — 2026-08-05
 - Added a small hover animation on the masthead logo (the leaf antenna perks up).
 - Removed "InsuranceERM" and the "concept mockup" caveat from the tagline.

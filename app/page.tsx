@@ -285,6 +285,11 @@ export default function Home() {
               <circle cx="19.5" cy="18.5" r="1.6" fill="#201d16" />
               <rect x="12" y="22" width="8" height="2" rx="1" fill="#4c6b23" opacity="0.85" />
             </svg>
+            {isDark && (
+              <span className="nut-free-badge" aria-hidden="true">
+                Nut Free
+              </span>
+            )}
             <div className="wordmark">
               Pesto<span>Bot</span>
             </div>

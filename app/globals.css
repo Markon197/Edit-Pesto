@@ -17,8 +17,8 @@
   --line: #ddd6c5;
   --del-bg: #f6e6e2;
   --del-ink: #8a3b2c;
-  --add-bg: #e9efdd;
-  --add-ink: #3f5a1c;
+  --add-bg: #ddefd0;
+  --add-ink: #186429;
   --error-bg: #f6e6e2;
   --error-ink: #8a3b2c;
   --shadow: 0 1px 2px rgba(32, 29, 22, 0.05);
@@ -42,8 +42,8 @@
   --line: #3a352a;
   --del-bg: #362521;
   --del-ink: #d99c8c;
-  --add-bg: #26301e;
-  --add-ink: #b0c98d;
+  --add-bg: #223a1c;
+  --add-ink: #7ee08f;
   --error-bg: #362521;
   --error-ink: #d99c8c;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
@@ -97,6 +97,18 @@ body {
   flex-shrink: 0;
   transition: transform 0.25s ease;
   transform-origin: 50% 100%;
+}
+/* Dark-mode-only easter egg: a little stamped-on "Nut Free" label, since
+   pesto usually means pine nuts. Rendered only when dark mode is active. */
+.masthead .nut-free-badge {
+  display: inline-block;
+  font-style: italic;
+  font-weight: 700;
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  color: var(--pesto);
+  transform: rotate(-11deg) translateY(3px);
+  white-space: nowrap;
 }
 .masthead .logo-mark:hover {
   transform: translateY(-2px) rotate(-4deg);
