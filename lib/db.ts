@@ -2,6 +2,7 @@
 // Vercel dashboard (Project -> Storage -> Create Database -> Postgres,
 // backed by Neon) and it auto-injects the POSTGRES_* env vars this reads —
 // no manual connection string needed. See README.md for the exact steps.
+import { randomUUID } from "crypto";
 import { sql } from "@vercel/postgres";
 
 let schemaReady: Promise<void> | null = null;
@@ -10,19 +11,29 @@ let schemaReady: Promise<void> | null = null;
 // instance so it only actually hits the DB once per cold start.
 export function ensureSchema(): Promise<void> {
   if (!schemaReady) {
-    schemaReady = sql`
-      CREATE TABLE IF NOT EXISTS events (
-        id TEXT PRIMARY KEY,
-        title TEXT NOT NULL,
-        tag TEXT NOT NULL,
-        start_date DATE NOT NULL,
-        end_date DATE,
-        description TEXT NOT NULL DEFAULT '',
-        link TEXT,
-        source TEXT NOT NULL DEFAULT 'manual',
-        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-      );
-    `
+    schemaReady = Promise.all([
+      sql`
+        CREATE TABLE IF NOT EXISTS events (
+          id TEXT PRIMARY KEY,
+          title TEXT NOT NULL,
+          tag TEXT NOT NULL,
+          start_date DATE NOT NULL,
+          end_date DATE,
+          description TEXT NOT NULL DEFAULT '',
+          link TEXT,
+          source TEXT NOT NULL DEFAULT 'manual',
+          created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        );
+      `,
+      sql`
+        CREATE TABLE IF NOT EXISTS activity_log (
+          id TEXT PRIMARY KEY,
+          action TEXT NOT NULL,
+          detail TEXT,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        );
+      `,
+    ])
       .then(() => undefined)
       .catch((err) => {
         // Let the next call retry rather than caching a failed connection.
@@ -31,6 +42,17 @@ export function ensureSchema(): Promise<void> {
       });
   }
   return schemaReady;
+}
+
+// Fire-and-forget usage tracking for the hidden /stats page. Never throws —
+// a logging failure must never break the feature it's logging.
+export async function logActivity(action: string, detail?: string): Promise<void> {
+  try {
+    await ensureSchema();
+    await sql`INSERT INTO activity_log (id, action, detail) VALUES (${randomUUID()}, ${action}, ${detail ?? null});`;
+  } catch (err) {
+    console.error("logActivity failed", err);
+  }
 }
 
 // One clear, actionable message for any DB failure, shown directly in the

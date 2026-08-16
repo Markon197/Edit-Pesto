@@ -1,6 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { NextResponse } from "next/server";
-import { ensureSchema, friendlyDbError, sql } from "@/lib/db";
+import { NextRequest, NextResponse } from "next/server";
+import { ensureSchema, friendlyDbError, logActivity, sql } from "@/lib/db";
 import { isLikelyDuplicate } from "@/lib/events";
 import { WEB_SEARCH_TOOL, SUBMIT_EVENTS_TOOL, buildEventsScanPrompt } from "@/lib/calendarPrompts";
 
@@ -9,7 +9,7 @@ export const maxDuration = 60;
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-export async function POST() {
+export async function POST(req: NextRequest) {
   if (!process.env.ANTHROPIC_API_KEY) {
     return NextResponse.json(
       { error: "Server is missing ANTHROPIC_API_KEY. Add it in the Vercel project settings." },
@@ -42,7 +42,7 @@ export async function POST() {
       tools: [WEB_SEARCH_TOOL, SUBMIT_EVENTS_TOOL] as unknown as Anthropic.Tool[],
       tool_choice: { type: "auto" },
       messages: [{ role: "user", content: buildEventsScanPrompt(todayISO, existingTitles) }],
-    });
+    }, { signal: req.signal }); // lets a client-side "Stop scan" cancel the upstream call too, not just the wait
 
     const submitBlock = message.content.find(
       (b: any) => b.type === "tool_use" && b.name === "submit_events"
@@ -68,8 +68,13 @@ export async function POST() {
         link: typeof e.link === "string" ? e.link : null,
       }));
 
+    await logActivity("scan_events", `found ${candidates.length}`);
     return NextResponse.json({ candidates });
   } catch (err) {
+    if (req.signal.aborted) {
+      // User pressed "Stop scan" — expected, not an error worth logging.
+      return NextResponse.json({ error: "Scan stopped." }, { status: 499 });
+    }
     console.error("POST /api/scan/events failed", err);
     return NextResponse.json(
       { error: "The web search step failed. Try again in a moment — if it keeps happening, tell Claude the exact error from the Vercel function logs." },

@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import sanitizeHtml from "sanitize-html";
 import { NextRequest, NextResponse } from "next/server";
 import { buildSystemPrompt, SUBMIT_REVIEW_TOOL } from "@/lib/styleGuide";
+import { logActivity } from "@/lib/db";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -94,6 +95,10 @@ export async function POST(req: NextRequest) {
         ),
       },
     });
+
+    // Never throws — a logging hiccup (e.g. database not yet provisioned)
+    // must never break the actual Edit check.
+    await logActivity("edit_check");
 
     return NextResponse.json({
       annotatedHtml: safeHtml,

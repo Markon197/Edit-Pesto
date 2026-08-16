@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Masthead from "@/components/Masthead";
+import PastaLoader from "@/components/PastaLoader";
+import { downloadIcs } from "@/lib/ics";
 import { EVENT_TAGS, TAG_LABELS, type CalendarEvent, type EventTag } from "@/lib/events";
 
 type ScanCandidate = {
@@ -13,6 +15,8 @@ type ScanCandidate = {
   link: string | null;
 };
 
+type ScanKind = "event" | "earnings" | "holiday";
+
 type ScanState = {
   loading: boolean;
   candidates: ScanCandidate[] | null;
@@ -22,6 +26,27 @@ type ScanState = {
 };
 
 const EMPTY_SCAN: ScanState = { loading: false, candidates: null, addedKeys: new Set(), error: null };
+
+const SCAN_CONFIG: Record<ScanKind, { url: string; tag: EventTag; buttonLabel: string; loadingLabel: string }> = {
+  event: {
+    url: "/api/scan/events",
+    tag: "event",
+    buttonLabel: "🔍 Scan insurance events",
+    loadingLabel: "Simmering the web for industry events…",
+  },
+  earnings: {
+    url: "/api/scan/earnings",
+    tag: "earnings",
+    buttonLabel: "🔍 Scan earnings calendar",
+    loadingLabel: "Stirring up the earnings calendar…",
+  },
+  holiday: {
+    url: "/api/holidays",
+    tag: "holiday",
+    buttonLabel: "📅 Add UK bank holidays",
+    loadingLabel: "Fetching UK bank holidays…",
+  },
+};
 
 function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
@@ -55,6 +80,8 @@ const MONTH_NAMES = [
   "July", "August", "September", "October", "November", "December",
 ];
 
+const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
 const EMPTY_ADD_FORM = {
   title: "",
   tag: "event" as EventTag,
@@ -63,6 +90,84 @@ const EMPTY_ADD_FORM = {
   description: "",
   link: "",
 };
+
+// ---- Month-grid layout: builds week rows, then packs each week's events
+// into "bars" spanning the day-columns they cover (clamped to that week),
+// stacked into non-overlapping lanes — the same idea Google Calendar's
+// month view uses, so a 4-day conference reads as one bar, not four dots.
+type DayCell = { day: number; iso: string } | null;
+type Week = { cells: DayCell[] };
+
+function buildWeeks(year: number, month: number): Week[] {
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const first = new Date(year, month, 1);
+  const startOffset = (first.getDay() + 6) % 7; // Monday-start
+  const weeks: Week[] = [];
+  let cells: DayCell[] = new Array(startOffset).fill(null);
+  for (let day = 1; day <= daysInMonth; day++) {
+    cells.push({ day, iso: isoFor(year, month, day) });
+    if (cells.length === 7) {
+      weeks.push({ cells });
+      cells = [];
+    }
+  }
+  if (cells.length) {
+    while (cells.length < 7) cells.push(null);
+    weeks.push({ cells });
+  }
+  return weeks;
+}
+
+type Bar = { event: CalendarEvent; startCol: number; endCol: number; lane: number };
+
+const MAX_LANES_PER_WEEK = 4;
+
+function layoutWeek(week: Week, events: CalendarEvent[]): { bars: Bar[]; overflowCount: number } {
+  const real = week.cells.filter((c): c is { day: number; iso: string } => c !== null);
+  if (!real.length) return { bars: [], overflowCount: 0 };
+  const weekStartIso = real[0].iso;
+  const weekEndIso = real[real.length - 1].iso;
+
+  const overlapping = events.filter((ev) => {
+    const evEnd = ev.endDate || ev.startDate;
+    return ev.startDate <= weekEndIso && evEnd >= weekStartIso;
+  });
+
+  const withCols = overlapping.map((ev) => {
+    const evEnd = ev.endDate || ev.startDate;
+    let startCol = week.cells.findIndex((c) => c && c.iso >= ev.startDate);
+    if (startCol === -1) startCol = 0;
+    let endCol = -1;
+    for (let i = 0; i < 7; i++) {
+      const c = week.cells[i];
+      if (c && c.iso <= evEnd) endCol = i;
+    }
+    if (endCol === -1) endCol = startCol;
+    return { event: ev, startCol, endCol };
+  });
+
+  // Earliest-starting first; among ties, longer bars first (claim lanes before short ones).
+  withCols.sort((a, b) => a.startCol - b.startCol || b.endCol - b.startCol - (a.endCol - a.startCol));
+
+  const laneEndCols: number[] = [];
+  const bars: Bar[] = [];
+  let overflowCount = 0;
+  for (const item of withCols) {
+    let lane = laneEndCols.findIndex((end) => end < item.startCol);
+    if (lane === -1) {
+      if (laneEndCols.length >= MAX_LANES_PER_WEEK) {
+        overflowCount++;
+        continue;
+      }
+      lane = laneEndCols.length;
+      laneEndCols.push(item.endCol);
+    } else {
+      laneEndCols[lane] = item.endCol;
+    }
+    bars.push({ ...item, lane });
+  }
+  return { bars, overflowCount };
+}
 
 export default function CalendarPage() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -79,9 +184,17 @@ export default function CalendarPage() {
   const [addSaving, setAddSaving] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
 
-  const [eventsScan, setEventsScan] = useState<ScanState>(EMPTY_SCAN);
-  const [earningsScan, setEarningsScan] = useState<ScanState>(EMPTY_SCAN);
-  const [activeScanPanel, setActiveScanPanel] = useState<"event" | "earnings" | null>(null);
+  const [scans, setScans] = useState<Record<ScanKind, ScanState>>({
+    event: EMPTY_SCAN,
+    earnings: EMPTY_SCAN,
+    holiday: EMPTY_SCAN,
+  });
+  const [activeScanPanel, setActiveScanPanel] = useState<ScanKind | null>(null);
+  const abortRefs = useRef<Record<ScanKind, AbortController | null>>({
+    event: null,
+    earnings: null,
+    holiday: null,
+  });
 
   async function loadEvents() {
     setLoadingEvents(true);
@@ -116,28 +229,8 @@ export default function CalendarPage() {
     setViewYear(y);
   }
 
-  // Map each day-of-month in the current view to the tags of events
-  // covering that day (start..end inclusive, or just the start day).
-  const dayTags = useMemo(() => {
-    const map = new Map<number, Set<EventTag>>();
-    const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
-    for (const ev of events) {
-      for (let d = 1; d <= daysInMonth; d++) {
-        const iso = isoFor(viewYear, viewMonth, d);
-        const end = ev.endDate || ev.startDate;
-        if (iso >= ev.startDate && iso <= end) {
-          if (!map.has(d)) map.set(d, new Set());
-          map.get(d)!.add(ev.tag);
-        }
-      }
-    }
-    return map;
-  }, [events, viewYear, viewMonth]);
-
-  function eventsOnDay(day: number): CalendarEvent[] {
-    const iso = isoFor(viewYear, viewMonth, day);
-    return events.filter((ev) => iso >= ev.startDate && iso <= (ev.endDate || ev.startDate));
-  }
+  const weeks = useMemo(() => buildWeeks(viewYear, viewMonth), [viewYear, viewMonth]);
+  const weekLayouts = useMemo(() => weeks.map((w) => layoutWeek(w, events)), [weeks, events]);
 
   const upcoming = useMemo(() => {
     const t = todayISO();
@@ -199,43 +292,54 @@ export default function CalendarPage() {
     }
   }
 
-  async function runScan(kind: "event" | "earnings") {
-    const setState = kind === "event" ? setEventsScan : setEarningsScan;
-    setState({ ...EMPTY_SCAN, loading: true });
+  async function runScan(kind: ScanKind) {
+    const controller = new AbortController();
+    abortRefs.current[kind] = controller;
+    setScans((s) => ({ ...s, [kind]: { ...EMPTY_SCAN, loading: true } }));
     setActiveScanPanel(kind);
     try {
-      const res = await fetch(kind === "event" ? "/api/scan/events" : "/api/scan/earnings", {
-        method: "POST",
-      });
+      const res = await fetch(SCAN_CONFIG[kind].url, { method: "POST", signal: controller.signal });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "The scan failed.");
-      setState({
-        loading: false,
-        candidates: data.candidates as ScanCandidate[],
-        addedKeys: new Set(),
-        error: null,
-        windowEndISO: data.windowEndISO,
-      });
+      setScans((s) => ({
+        ...s,
+        [kind]: {
+          loading: false,
+          candidates: data.candidates as ScanCandidate[],
+          addedKeys: new Set(),
+          error: null,
+          windowEndISO: data.windowEndISO,
+        },
+      }));
     } catch (e) {
-      setState({
-        loading: false,
-        candidates: null,
-        addedKeys: new Set(),
-        error: e instanceof Error ? e.message : "The scan failed.",
-      });
+      if (e instanceof DOMException && e.name === "AbortError") {
+        // User pressed Stop — quietly reset, no error banner.
+        setScans((s) => ({ ...s, [kind]: EMPTY_SCAN }));
+        setActiveScanPanel(null);
+        return;
+      }
+      setScans((s) => ({
+        ...s,
+        [kind]: { ...EMPTY_SCAN, error: e instanceof Error ? e.message : "The scan failed." },
+      }));
+    } finally {
+      abortRefs.current[kind] = null;
     }
   }
 
-  async function addCandidate(kind: "event" | "earnings", candidate: ScanCandidate) {
+  function stopScan(kind: ScanKind) {
+    abortRefs.current[kind]?.abort();
+  }
+
+  async function addCandidate(kind: ScanKind, candidate: ScanCandidate) {
     const key = candidate.title + candidate.startDate;
-    const setState = kind === "event" ? setEventsScan : setEarningsScan;
     try {
       const res = await fetch("/api/events", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: candidate.title,
-          tag: kind,
+          tag: SCAN_CONFIG[kind].tag,
           startDate: candidate.startDate,
           endDate: candidate.endDate || undefined,
           description: candidate.description,
@@ -246,15 +350,15 @@ export default function CalendarPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Could not add that event.");
       setEvents((cur) => [...cur, data.event as CalendarEvent]);
-      setState((cur) => ({ ...cur, addedKeys: new Set(cur.addedKeys).add(key) }));
+      setScans((s) => ({
+        ...s,
+        [kind]: { ...s[kind], addedKeys: new Set(s[kind].addedKeys).add(key) },
+      }));
     } catch (e) {
       alert(e instanceof Error ? e.message : "Could not add that event.");
     }
   }
 
-  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
-  const firstOfMonth = new Date(viewYear, viewMonth, 1);
-  const startOffset = (firstOfMonth.getDay() + 6) % 7; // Monday-start week
   const todayIsoStr = todayISO();
 
   return (
@@ -266,100 +370,77 @@ export default function CalendarPage() {
           <button className="action btn-ghost" onClick={openAddForm}>
             + Add event
           </button>
-          <button className="action btn-secondary" onClick={() => runScan("event")} disabled={eventsScan.loading}>
-            {eventsScan.loading ? "Scanning…" : "🔍 Scan insurance events"}
-          </button>
-          <button
-            className="action btn-secondary"
-            onClick={() => runScan("earnings")}
-            disabled={earningsScan.loading}
-          >
-            {earningsScan.loading ? "Scanning…" : "🔍 Scan earnings calendar"}
-          </button>
+          {(["event", "earnings", "holiday"] as ScanKind[]).map((kind) => {
+            const st = scans[kind];
+            return (
+              <button
+                key={kind}
+                className="action btn-secondary"
+                onClick={() => (st.loading ? stopScan(kind) : runScan(kind))}
+              >
+                {st.loading ? "⏹ Stop scan" : SCAN_CONFIG[kind].buttonLabel}
+              </button>
+            );
+          })}
         </div>
 
-        {activeScanPanel === "event" && (eventsScan.candidates || eventsScan.error) && (
-          <div className="scan-panel">
-            {eventsScan.error ? (
-              <p className="scan-note">{eventsScan.error}</p>
-            ) : (
-              <>
-                <h3>
-                  {eventsScan.candidates!.length === 0
-                    ? "No new industry events found"
-                    : `Found ${eventsScan.candidates!.length} upcoming industry event${
-                        eventsScan.candidates!.length === 1 ? "" : "s"
-                      }`}
-                </h3>
-                <p className="scan-note">Events already on your calendar are left out automatically.</p>
-                {eventsScan.candidates!.map((c) => {
-                  const key = c.title + c.startDate;
-                  const added = eventsScan.addedKeys.has(key);
-                  return (
-                    <div className="scan-result" key={key}>
-                      <div className="info">
-                        <strong>{c.title}</strong>{" "}
-                        <span className="d">
-                          — {formatDateRange(c.startDate, c.endDate)}
-                          {c.location ? `, ${c.location}` : ""}
-                        </span>
-                        {c.description && <div className="desc">{c.description}</div>}
-                      </div>
-                      <button
-                        className="add-btn"
-                        disabled={added}
-                        onClick={() => addCandidate("event", c)}
-                        aria-label={`Add ${c.title} to the calendar`}
-                      >
-                        {added ? "✓" : "+"}
-                      </button>
-                    </div>
-                  );
-                })}
-              </>
-            )}
-          </div>
-        )}
-
-        {activeScanPanel === "earnings" && (earningsScan.candidates || earningsScan.error) && (
-          <div className="scan-panel">
-            {earningsScan.error ? (
-              <p className="scan-note">{earningsScan.error}</p>
-            ) : (
-              <>
-                <h3>
-                  {earningsScan.candidates!.length === 0
-                    ? "No qualifying earnings in the next two weeks"
-                    : `Insurance earnings in the next two weeks (${earningsScan.candidates!.length})`}
-                </h3>
-                <p className="scan-note">
-                  Only covers {formatDateRange(todayIsoStr, earningsScan.windowEndISO || todayIsoStr)} — nothing
-                  further out shows here. Already-added companies are left out automatically.
-                </p>
-                {earningsScan.candidates!.map((c) => {
-                  const key = c.title + c.startDate;
-                  const added = earningsScan.addedKeys.has(key);
-                  return (
-                    <div className="scan-result" key={key}>
-                      <div className="info">
-                        <strong>{c.title}</strong> <span className="d">— {formatShort(c.startDate)}</span>
-                        {c.description && <div className="desc">{c.description}</div>}
-                      </div>
-                      <button
-                        className="add-btn"
-                        disabled={added}
-                        onClick={() => addCandidate("earnings", c)}
-                        aria-label={`Add ${c.title} to the calendar`}
-                      >
-                        {added ? "✓" : "+"}
-                      </button>
-                    </div>
-                  );
-                })}
-              </>
-            )}
-          </div>
-        )}
+        {activeScanPanel &&
+          (() => {
+            const kind = activeScanPanel;
+            const st = scans[kind];
+            if (st.loading) {
+              return (
+                <div className={`scan-panel scan-panel-${kind}`}>
+                  <PastaLoader label={SCAN_CONFIG[kind].loadingLabel} />
+                </div>
+              );
+            }
+            if (!st.candidates && !st.error) return null;
+            return (
+              <div className={`scan-panel scan-panel-${kind}`}>
+                {st.error ? (
+                  <p className="scan-note">{st.error}</p>
+                ) : (
+                  <>
+                    <h3>
+                      {st.candidates!.length === 0
+                        ? "Nothing new found"
+                        : `Found ${st.candidates!.length} new item${st.candidates!.length === 1 ? "" : "s"}`}
+                    </h3>
+                    <p className="scan-note">
+                      {kind === "earnings" &&
+                        `Only covers ${formatDateRange(todayIsoStr, st.windowEndISO || todayIsoStr)} — nothing further out shows here. `}
+                      Already-added items are left out automatically.
+                    </p>
+                    {st.candidates!.map((c) => {
+                      const key = c.title + c.startDate;
+                      const added = st.addedKeys.has(key);
+                      return (
+                        <div className="scan-result" key={key}>
+                          <div className="info">
+                            <strong>{c.title}</strong>{" "}
+                            <span className="d">
+                              — {formatDateRange(c.startDate, c.endDate)}
+                              {c.location ? `, ${c.location}` : ""}
+                            </span>
+                            {c.description && <div className="desc">{c.description}</div>}
+                          </div>
+                          <button
+                            className="add-btn"
+                            disabled={added}
+                            onClick={() => addCandidate(kind, c)}
+                            aria-label={`Add ${c.title} to the calendar`}
+                          >
+                            {added ? "✓" : "+"}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </>
+                )}
+              </div>
+            );
+          })()}
 
         {listError && <div className="error-banner">{listError}</div>}
 
@@ -381,44 +462,50 @@ export default function CalendarPage() {
             </div>
             <div className="cal-grid">
               <div className="cal-weekdays">
-                <div>Mon</div>
-                <div>Tue</div>
-                <div>Wed</div>
-                <div>Thu</div>
-                <div>Fri</div>
-                <div>Sat</div>
-                <div>Sun</div>
-              </div>
-              <div className="cal-days">
-                {Array.from({ length: startOffset }).map((_, i) => (
-                  <div className="cal-day empty" key={`e${i}`} />
+                {WEEKDAY_LABELS.map((d) => (
+                  <div key={d}>{d}</div>
                 ))}
-                {Array.from({ length: daysInMonth }).map((_, i) => {
-                  const day = i + 1;
-                  const tags = dayTags.get(day);
-                  const iso = isoFor(viewYear, viewMonth, day);
-                  const isToday = iso === todayIsoStr;
-                  return (
-                    <div
-                      key={day}
-                      className={`cal-day${tags ? " has-event" : ""}${isToday ? " today" : ""}`}
-                      onClick={() => {
-                        const dayEvents = eventsOnDay(day);
-                        if (dayEvents.length) setModalEvent(dayEvents[0]);
-                      }}
-                    >
-                      {day}
-                      {tags && (
-                        <div className="dots">
-                          {Array.from(tags).map((t) => (
-                            <span className={`dot ${t}`} key={t} />
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
               </div>
+              {weeks.map((week, wi) => {
+                const { bars, overflowCount } = weekLayouts[wi];
+                const maxLane = bars.reduce((m, b) => Math.max(m, b.lane), -1);
+                return (
+                  <div
+                    key={wi}
+                    className="cal-week"
+                    style={{ gridTemplateRows: `24px repeat(${maxLane + 1}, 20px)` }}
+                  >
+                    {week.cells.map((c, ci) => (
+                      <div
+                        key={ci}
+                        className={`cal-daynum${c ? "" : " empty"}${c && c.iso === todayIsoStr ? " today" : ""}`}
+                        style={{ gridColumn: ci + 1, gridRow: 1 }}
+                      >
+                        {c ? c.day : ""}
+                      </div>
+                    ))}
+                    {bars.map((b) => (
+                      <div
+                        key={b.event.id}
+                        className={`cal-bar ${b.event.tag}`}
+                        style={{ gridColumn: `${b.startCol + 1} / ${b.endCol + 2}`, gridRow: b.lane + 2 }}
+                        title={b.event.title}
+                        onClick={() => setModalEvent(b.event)}
+                      >
+                        {b.event.title}
+                      </div>
+                    ))}
+                    {overflowCount > 0 && (
+                      <div
+                        className="cal-bar-overflow"
+                        style={{ gridColumn: "1 / 8", gridRow: maxLane + 3 }}
+                      >
+                        +{overflowCount} more this week
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
             <div className="cal-legend">
               <span>
@@ -429,6 +516,9 @@ export default function CalendarPage() {
               </span>
               <span>
                 <span className="dot editorial" /> Editorial
+              </span>
+              <span>
+                <span className="dot holiday" /> Bank Holiday
               </span>
             </div>
           </div>
@@ -478,9 +568,14 @@ export default function CalendarPage() {
               </p>
             )}
             <div className="modal-actions">
-              <button className="action btn-ghost" onClick={() => setModalEvent(null)}>
-                Close
-              </button>
+              <div style={{ display: "flex", gap: 10 }}>
+                <button className="action btn-ghost" onClick={() => downloadIcs(modalEvent)}>
+                  Export .ics
+                </button>
+                <button className="action btn-ghost" onClick={() => setModalEvent(null)}>
+                  Close
+                </button>
+              </div>
               <button className="action btn-danger" onClick={() => deleteEvent(modalEvent.id)}>
                 Delete event
               </button>

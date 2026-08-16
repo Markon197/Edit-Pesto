@@ -21,6 +21,9 @@
   --add-ink: #186429;
   --earn: #7a4a1c;
   --earn-tint: #f3e6d4;
+  --holiday: #8a2f45;
+  --holiday-tint: #f5e3e8;
+  --today-tint: #f4e3c2;
   --error-bg: #f6e6e2;
   --error-ink: #8a3b2c;
   --shadow: 0 1px 2px rgba(32, 29, 22, 0.05);
@@ -48,6 +51,9 @@
   --add-ink: #7ee08f;
   --earn: #d9a86c;
   --earn-tint: #332616;
+  --holiday: #d98ca3;
+  --holiday-tint: #362128;
+  --today-tint: #3a3018;
   --error-bg: #362521;
   --error-ink: #d99c8c;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
@@ -683,63 +689,95 @@ button.action:disabled {
 .cal-weekdays {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--ink-soft);
-  margin-bottom: 6px;
-  text-align: center;
+  margin-bottom: 4px;
+  padding: 0 2px;
 }
-.cal-days {
+
+/* Each week is one bordered row; days are columns within it (not separate
+   boxed cells) so a multi-day event can render as a single bar spanning
+   its columns, the way Google Calendar's month view does, instead of a
+   dot repeated on every day it touches. */
+.cal-week {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
-}
-.cal-day {
-  aspect-ratio: 1;
   border: 1px solid var(--line);
-  border-radius: 3px;
-  padding: 5px;
-  font-size: 0.85rem;
-  position: relative;
-  color: var(--ink);
+  border-top: none;
+}
+.cal-week:first-child {
+  border-top: 1px solid var(--line);
+}
+.cal-daynum {
+  padding: 4px 6px 2px;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  border-right: 1px solid var(--line);
+}
+.cal-daynum:last-of-type {
+  border-right: none;
+}
+.cal-daynum.empty {
   background: var(--paper);
 }
-.cal-day.empty {
-  border-color: transparent;
-  background: transparent;
+.cal-daynum.today {
+  color: var(--ink);
+  font-weight: 700;
+  background: var(--today-tint);
 }
-.cal-day.today {
-  border-color: var(--navy);
-  border-width: 2px;
+.cal-bar {
+  margin: 1px 3px;
+  padding: 1px 6px;
+  border-radius: 2px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
 }
-.cal-day .dots {
-  position: absolute;
-  bottom: 5px;
-  left: 5px;
-  display: flex;
-  gap: 2px;
+.cal-bar:hover {
+  filter: brightness(1.1);
+}
+.cal-bar.event {
+  background: var(--navy);
+}
+.cal-bar.earnings {
+  background: var(--earn);
+}
+.cal-bar.editorial {
+  background: var(--pesto);
+}
+.cal-bar.holiday {
+  background: var(--holiday);
+}
+.cal-bar-overflow {
+  margin: 1px 3px;
+  padding: 1px 6px;
+  font-size: 0.68rem;
+  font-style: italic;
+  color: var(--ink-soft);
 }
 .dot {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
+  display: inline-block;
 }
 .dot.event {
   background: var(--navy);
 }
 .dot.earnings {
-  background: var(--earn, #7a4a1c);
+  background: var(--earn);
 }
 .dot.editorial {
   background: var(--pesto);
 }
-.cal-day.has-event {
-  cursor: pointer;
-}
-.cal-day.has-event:hover {
-  border-color: var(--navy);
+.dot.holiday {
+  background: var(--holiday);
 }
 .cal-legend {
   display: flex;
@@ -819,6 +857,10 @@ button.action:disabled {
   background: var(--pesto-tint);
   color: var(--pesto);
 }
+.tag-pill.holiday {
+  background: var(--holiday-tint);
+  color: var(--holiday);
+}
 
 .scan-panel {
   border: 1px solid var(--navy);
@@ -827,12 +869,29 @@ button.action:disabled {
   padding: 14px 16px;
   margin-bottom: 18px;
 }
+.scan-panel.scan-panel-earnings {
+  border-color: var(--earn);
+  background: var(--earn-tint);
+}
+.scan-panel.scan-panel-holiday {
+  border-color: var(--holiday);
+  background: var(--holiday-tint);
+}
+.scan-panel .checking-state {
+  padding: 10px 0 4px;
+}
 .scan-panel h3 {
   margin: 0 0 4px;
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--navy);
+}
+.scan-panel-earnings h3 {
+  color: var(--earn);
+}
+.scan-panel-holiday h3 {
+  color: var(--holiday);
 }
 .scan-panel .scan-note {
   font-size: 0.82rem;

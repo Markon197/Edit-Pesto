@@ -3,7 +3,7 @@
 Two tools for InsuranceERM in one app, sharing a masthead and tab nav:
 
 - **Edit** — a final proofing pass on articles before they go to the CMS. Paste a finished, edited article in on the left; get it back on the right with only genuine typos, grammar, spacing and style-guide issues fixed and marked inline — links, bold and italics untouched. Plus five headline options and a copy-ready list of the companies and people mentioned.
-- **Calendar** — a shared team calendar of industry events, editorial deadlines and insurer earnings dates, with two AI scan buttons that search the web and propose events to add.
+- **Calendar** — a shared team calendar tagged Industry event / Earnings / Editorial / Bank Holiday, with three scan buttons that propose events to add: two AI-driven (industry events, earnings), one deterministic (UK bank holidays, pulled straight from gov.uk).
 
 The style guide the Edit tab checks against lives in [`lib/styleGuide.ts`](lib/styleGuide.ts) — edit that file directly to change the rules.
 
@@ -15,14 +15,20 @@ The style guide the Edit tab checks against lives in [`lib/styleGuide.ts`](lib/s
 - `lib/styleGuide.ts` — the InsuranceERM style guide and the instructions given to the model.
 
 **Calendar tab**
-- `app/calendar/page.tsx` — the UI (month view, upcoming list, add-event form, scan panels, event popup).
+- `app/calendar/page.tsx` — the UI: a month grid where multi-day events render as one spanning bar (not a dot per day), the upcoming list, add-event form, scan panels, event popup with an **Export .ics** button (opens directly in Outlook/Google/Apple Calendar).
 - `app/api/events/route.ts` and `app/api/events/[id]/route.ts` — list/create/delete events in the shared database.
-- `app/api/scan/events/route.ts` and `app/api/scan/earnings/route.ts` — the two scan buttons. Each calls Claude with web search turned on so results are grounded in real, current data, then filters out anything already on the calendar before returning candidates (nothing is saved until you click **+**).
-- `lib/calendarPrompts.ts` — the instructions given to the model for each scan.
-- `lib/db.ts` / `lib/events.ts` — the database client and shared types/tag list.
+- `app/api/scan/events/route.ts` and `app/api/scan/earnings/route.ts` — the two AI scan buttons. Each calls Claude with web search turned on so results are grounded in real, current data, then filters out anything already on the calendar before returning candidates (nothing is saved until you click **+**). Each also wires the request's abort signal through to the Claude call, so pressing **Stop scan** actually cancels the upstream call, not just the wait.
+- `app/api/holidays/route.ts` — the UK bank holidays button. No AI involved — pulls straight from gov.uk's own published data (england-and-wales), so it's fast, free, and always accurate.
+- `lib/calendarPrompts.ts` — the instructions given to the model for the two AI scans.
+- `lib/db.ts` / `lib/events.ts` / `lib/ics.ts` — the database client, shared types/tag list, and the .ics file generator.
+
+**Usage stats**
+- `/stats` — a hidden page (not linked anywhere in the app) showing how often each button has been used: Edit checks, and each of the three scan types. Protected by the same site password as everything else — reach it by typing the URL directly.
+- `app/api/stats/route.ts` reads from the `activity_log` table, written to by `logActivity()` in `lib/db.ts`.
 
 **Shared**
 - `components/Masthead.tsx` — logo, version badge, dark-mode toggle, and the Edit/Calendar tabs.
+- `components/PastaLoader.tsx` — the steaming-bowl loading animation, used by both the Edit tab's "Checking…" state and the Calendar tab's scan states.
 - `middleware.ts` — a simple shared-password gate (`SITE_PASSWORD`) in front of the whole site.
 
 ## Local setup
@@ -67,5 +73,6 @@ Edit the `STYLE_GUIDE` text in [`lib/styleGuide.ts`](lib/styleGuide.ts) and rede
 
 - Articles over ~60,000 characters are rejected in one go — split very long pieces.
 - The password gate is a single shared password for the whole team, suited to an internal tool — not intended to protect sensitive data.
-- The two scan buttons rely on Claude's web search tool, which needs a real, current Anthropic API key with web search available on the account. If a scan errors immediately, that's the first thing to check.
-- Event dedup on the scan buttons is a straightforward title match (not fuzzy matching) — an event added under a noticeably different name could still show up again as a "new" suggestion.
+- The two AI scan buttons rely on Claude's web search tool, which needs a real, current Anthropic API key with web search available on the account. If a scan errors immediately, that's the first thing to check. The bank holidays button has no such dependency — it's a plain fetch to gov.uk.
+- Event dedup on all three scan buttons is a straightforward title match (not fuzzy matching) — an event added under a noticeably different name could still show up again as a "new" suggestion.
+- The calendar grid packs up to 4 overlapping events per week into stacked bars; a 5th+ overlapping event in the same week shows as "+N more" instead of a bar (still fully visible in the Upcoming list either way).

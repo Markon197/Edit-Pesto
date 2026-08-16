@@ -2,6 +2,14 @@
 
 Every shipped change bumps `APP_VERSION` in [lib/version.ts](lib/version.ts) (shown in the masthead) and gets a line here, so it's obvious at a glance whether the live site reflects the latest request.
 
+## Version 6 — 2026-08-05
+- Scan buttons now show a pasta-bowl loading animation while running, and turn into a **Stop scan** button — pressing it cancels the request all the way through to the Claude call, so an accidental press doesn't burn tokens.
+- Calendar redesign: multi-day events render as one spanning bar across the days they cover (Google Calendar-style) instead of a dot repeated per day; single-day events show their title directly in the grid, not just a colored dot.
+- Added a 4th tag, **Bank Holiday**, plus an "Add UK bank holidays" button — pulls straight from gov.uk's own data (no AI needed), for today through the end of next year.
+- Event popups now have an **Export .ics** button — downloads a file that opens directly in Outlook, Google Calendar, or Apple Calendar.
+- New hidden `/stats` page (not linked anywhere, same site password) showing usage counts: Edit checks, and each scan type, with a recent-activity log.
+- More color variety: Bank Holiday's burgundy plus a warm gold "today" highlight, moving past the navy/cream-only palette.
+
 ## Version 5 — 2026-08-05
 - Fixed the masthead/tabs/content width mismatch — all three now line up at the same (wider) 1600px column, with full-width colored bars behind the masthead and tabs.
 - Made the Edit/Calendar tabs noticeably bigger and easier to spot.
