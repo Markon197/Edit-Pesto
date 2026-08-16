@@ -30,6 +30,16 @@
      to spot at a glance. */
   --ierm: #96650c;
   --ierm-tint: #f7ecd3;
+  /* Extra palette options for custom tags, beyond the six original tag
+     colors above — kept in the same warm, muted family. */
+  --slate: #4a5568;
+  --slate-tint: #eceef1;
+  --violet: #6b4a8a;
+  --violet-tint: #ede4f2;
+  --rose: #a63d5f;
+  --rose-tint: #f6e3ea;
+  --forest: #2f6b4f;
+  --forest-tint: #e4efe9;
   --today-tint: #f4e3c2;
   --error-bg: #f6e6e2;
   --error-ink: #8a3b2c;
@@ -64,6 +74,14 @@
   --webinar-tint: #1a2e2b;
   --ierm: #e0b24d;
   --ierm-tint: #3a2f14;
+  --slate: #a3adba;
+  --slate-tint: #2a2e35;
+  --violet: #c3a6dd;
+  --violet-tint: #2c2434;
+  --rose: #e0a0b6;
+  --rose-tint: #362128;
+  --forest: #8fcbaa;
+  --forest-tint: #1c2f24;
   --today-tint: #3a3018;
   --error-bg: #362521;
   --error-ink: #d99c8c;
@@ -678,6 +696,19 @@ button:disabled {
   padding: 0;
   font-family: inherit;
 }
+
+/* Sits directly above the calendar grid — event count + the "See all"
+   button that replaced the old Upcoming side panel. */
+.cal-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+  font-style: italic;
+}
+
 .scan-menu-wrap {
   position: relative;
   display: inline-block;
@@ -748,24 +779,11 @@ button.action:disabled {
   cursor: not-allowed;
 }
 
+/* Just the calendar now — the Upcoming side panel was removed in favour of
+   a "See all" button above the grid, so the calendar gets the full width
+   of main instead of splitting it with a sidebar. */
 .cal-workspace {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 20px;
-  /* NOT stretch: CSS Grid's auto-height row sizing uses items' natural
-     content height even for a flexed/overflow-y:auto child, so letting the
-     Upcoming list "stretch" here just made both panes balloon to fit every
-     event instead of scrolling. Both panes keep their own natural height;
-     the Upcoming pane's max-height is set to match the calendar's actual
-     rendered height in JS (see the ResizeObserver in app/calendar/page.tsx),
-     which is the only way to cap it without either hardcoding a magic
-     number or re-triggering the same circular growth. */
-  align-items: start;
-}
-@media (max-width: 920px) {
-  .cal-workspace {
-    grid-template-columns: 1fr;
-  }
+  display: block;
 }
 
 .cal-pane-head {
@@ -879,7 +897,7 @@ button.action:disabled {
 .cal-weekdays {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--ink-soft);
@@ -897,8 +915,10 @@ button.action:disabled {
   /* Fixed, not content-sized: every week is exactly the same height,
      whatever it holds — a header row, 3 event-bar lanes, and a row for
      "+N more" that's just empty when there's nothing to overflow. This
-     is what keeps the whole grid the same size every month. */
-  grid-template-rows: 40px repeat(3, 24px) 18px;
+     is what keeps the whole grid the same size every month. Taller than
+     the original, now that the calendar has the Upcoming panel's old
+     width to spread into as well. */
+  grid-template-rows: 46px repeat(3, 27px) 20px;
   border: 1px solid var(--line);
   border-top: none;
 }
@@ -909,8 +929,8 @@ button.action:disabled {
   /* Spans every row of the week (set via inline gridRow: "1 / -1") so its
      border-right runs the full height of the row, like a real spreadsheet
      column line — not just alongside the day number at the top. */
-  padding: 8px 8px 2px;
-  font-size: 0.92rem;
+  padding: 9px 10px 2px;
+  font-size: 1rem;
   color: var(--ink-soft);
   border-right: 1px solid var(--line);
 }
@@ -927,9 +947,9 @@ button.action:disabled {
 }
 .cal-bar {
   margin: 1px 3px;
-  padding: 1px 6px;
+  padding: 2px 7px;
   border-radius: 2px;
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   font-weight: 700;
   color: #fff;
   overflow: hidden;
@@ -940,26 +960,43 @@ button.action:disabled {
 .cal-bar:hover {
   filter: brightness(1.1);
 }
-.cal-bar.event {
+/* Colors are keyed to the tag's chosen palette color (color-navy,
+   color-earn, ...), not the tag's own id — tags are team-editable now, so
+   there's no fixed set of ids to write a selector per. */
+.cal-bar.color-navy {
   background: var(--navy);
 }
-.cal-bar.earnings {
+.cal-bar.color-earn {
   background: var(--earn);
 }
-.cal-bar.editorial {
+.cal-bar.color-pesto {
   background: var(--pesto);
 }
-.cal-bar.holiday {
+.cal-bar.color-holiday {
   background: var(--holiday);
 }
-.cal-bar.webinar {
+.cal-bar.color-webinar {
   background: var(--webinar);
 }
-/* InsuranceERM's own events: same bar shape as everything else, but a
-   bright accent plus a light inset ring so it reads as "ours" at a glance
-   against the rest of the month grid. */
-.cal-bar.insuranceerm {
+.cal-bar.color-ierm {
   background: var(--ierm);
+}
+.cal-bar.color-slate {
+  background: var(--slate);
+}
+.cal-bar.color-violet {
+  background: var(--violet);
+}
+.cal-bar.color-rose {
+  background: var(--rose);
+}
+.cal-bar.color-forest {
+  background: var(--forest);
+}
+/* Highlighted tags (originally just InsuranceERM's own events, now any tag
+   that opts in) get a light inset ring so they read as "special" at a
+   glance against the rest of the month grid. */
+.cal-bar.tag-highlight {
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6);
 }
 .cal-bar-overflow {
@@ -991,23 +1028,35 @@ button.action:disabled {
   border-radius: 50%;
   display: inline-block;
 }
-.dot.event {
+.dot.color-navy {
   background: var(--navy);
 }
-.dot.earnings {
+.dot.color-earn {
   background: var(--earn);
 }
-.dot.editorial {
+.dot.color-pesto {
   background: var(--pesto);
 }
-.dot.holiday {
+.dot.color-holiday {
   background: var(--holiday);
 }
-.dot.webinar {
+.dot.color-webinar {
   background: var(--webinar);
 }
-.dot.insuranceerm {
+.dot.color-ierm {
   background: var(--ierm);
+}
+.dot.color-slate {
+  background: var(--slate);
+}
+.dot.color-violet {
+  background: var(--violet);
+}
+.dot.color-rose {
+  background: var(--rose);
+}
+.dot.color-forest {
+  background: var(--forest);
 }
 .cal-legend {
   display: flex;
@@ -1076,42 +1125,99 @@ button.action:disabled {
   padding: 1px 6px;
   margin-top: 6px;
 }
-.tag-pill.event {
+.tag-pill.color-navy {
   background: var(--navy-tint);
   color: var(--navy);
 }
-.tag-pill.earnings {
+.tag-pill.color-earn {
   background: var(--earn-tint, #f3e6d4);
   color: var(--earn, #7a4a1c);
 }
-.tag-pill.editorial {
+.tag-pill.color-pesto {
   background: var(--pesto-tint);
   color: var(--pesto);
 }
-.tag-pill.holiday {
+.tag-pill.color-holiday {
   background: var(--holiday-tint);
   color: var(--holiday);
 }
-.tag-pill.webinar {
+.tag-pill.color-webinar {
   background: var(--webinar-tint);
   color: var(--webinar);
 }
-/* The one tag-pill with a border — a small, deliberate "highlight" so
-   InsuranceERM's own events stand out from the rest of the tag set, not
-   just another color in the row. */
-.tag-pill.insuranceerm {
+.tag-pill.color-ierm {
   background: var(--ierm-tint);
   color: var(--ierm);
-  border: 1px solid var(--ierm);
+}
+.tag-pill.color-slate {
+  background: var(--slate-tint);
+  color: var(--slate);
+}
+.tag-pill.color-violet {
+  background: var(--violet-tint);
+  color: var(--violet);
+}
+.tag-pill.color-rose {
+  background: var(--rose-tint);
+  color: var(--rose);
+}
+.tag-pill.color-forest {
+  background: var(--forest-tint);
+  color: var(--forest);
+}
+/* A highlighted tag's pill gets a border in its own color — currentColor
+   picks up whatever .color-X above already set, so this one rule covers
+   every palette color without needing a per-color variant. */
+.tag-pill.tag-highlight {
+  border: 1px solid currentColor;
 }
 
-/* Events on InsuranceERM's own calendar get a light tint + accent border
-   wherever they appear as a card, so they're easy to spot in a scrolling
-   list without having to read the pill. Progressive enhancement — browsers
-   without :has() just show the plain card, nothing breaks. */
-.event-card:has(.tag-pill.insuranceerm) {
+/* A highlighted tag's events get a light tint + accent border wherever
+   they appear as a card, so they're easy to spot in a scrolling list
+   without having to read the pill. One rule per color (currentColor can't
+   bridge from the child pill's color up to the parent card's background,
+   so each has to name its own variable), all otherwise identical.
+   Progressive enhancement — browsers without :has() just show a plain
+   card, nothing breaks. */
+.event-card:has(.tag-pill.tag-highlight.color-navy) {
+  background: var(--navy-tint);
+  border-left: 3px solid var(--navy);
+}
+.event-card:has(.tag-pill.tag-highlight.color-earn) {
+  background: var(--earn-tint);
+  border-left: 3px solid var(--earn);
+}
+.event-card:has(.tag-pill.tag-highlight.color-pesto) {
+  background: var(--pesto-tint);
+  border-left: 3px solid var(--pesto);
+}
+.event-card:has(.tag-pill.tag-highlight.color-holiday) {
+  background: var(--holiday-tint);
+  border-left: 3px solid var(--holiday);
+}
+.event-card:has(.tag-pill.tag-highlight.color-webinar) {
+  background: var(--webinar-tint);
+  border-left: 3px solid var(--webinar);
+}
+.event-card:has(.tag-pill.tag-highlight.color-ierm) {
   background: var(--ierm-tint);
   border-left: 3px solid var(--ierm);
+}
+.event-card:has(.tag-pill.tag-highlight.color-slate) {
+  background: var(--slate-tint);
+  border-left: 3px solid var(--slate);
+}
+.event-card:has(.tag-pill.tag-highlight.color-violet) {
+  background: var(--violet-tint);
+  border-left: 3px solid var(--violet);
+}
+.event-card:has(.tag-pill.tag-highlight.color-rose) {
+  background: var(--rose-tint);
+  border-left: 3px solid var(--rose);
+}
+.event-card:has(.tag-pill.tag-highlight.color-forest) {
+  background: var(--forest-tint);
+  border-left: 3px solid var(--forest);
 }
 
 .scan-panel {
@@ -1326,6 +1432,13 @@ button.action:disabled {
   resize: vertical;
   min-height: 60px;
 }
+.event-form input[type="checkbox"] {
+  width: auto;
+  padding: 0;
+  border: none;
+  background: none;
+  accent-color: var(--navy);
+}
 .event-form .form-row {
   display: flex;
   gap: 10px;
@@ -1335,4 +1448,118 @@ button.action:disabled {
 }
 .event-form .label-narrow {
   max-width: 160px;
+}
+
+/* ---------- Manage tags modal ---------- */
+.tag-manage-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 50vh;
+  overflow-y: auto;
+  margin: 4px 0 6px;
+}
+.tag-manage-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 2px;
+  border-bottom: 1px solid var(--line);
+}
+.tag-manage-row:last-child {
+  border-bottom: none;
+}
+.tag-manage-info {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.tag-manage-info .tag-pill {
+  margin-top: 0;
+  flex-shrink: 0;
+}
+.tag-manage-count {
+  font-size: 0.76rem;
+  color: var(--ink-soft);
+  font-style: italic;
+  white-space: nowrap;
+}
+.tag-manage-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.tag-manage-actions .icon-btn {
+  padding: 4px 7px;
+  font-size: 0.72rem;
+}
+.tag-manage-form {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 12px;
+  margin-top: 4px;
+}
+.swatch-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 6px 0 2px;
+}
+.swatch {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+}
+.swatch.selected {
+  border-color: var(--ink);
+}
+.swatch.color-navy {
+  background: var(--navy);
+}
+.swatch.color-earn {
+  background: var(--earn);
+}
+.swatch.color-pesto {
+  background: var(--pesto);
+}
+.swatch.color-holiday {
+  background: var(--holiday);
+}
+.swatch.color-webinar {
+  background: var(--webinar);
+}
+.swatch.color-ierm {
+  background: var(--ierm);
+}
+.swatch.color-slate {
+  background: var(--slate);
+}
+.swatch.color-violet {
+  background: var(--violet);
+}
+.swatch.color-rose {
+  background: var(--rose);
+}
+.swatch.color-forest {
+  background: var(--forest);
+}
+/* Two classes here outrank .event-form label's flex-direction: column
+   (one class + one element) — needed since this one label wants its
+   checkbox and text side by side, not stacked like every other field. */
+.event-form .tag-highlight-toggle {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  margin-top: 10px;
+}
+.tag-highlight-toggle input {
+  width: auto;
 }

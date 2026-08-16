@@ -2,6 +2,10 @@
 
 Every shipped change bumps `APP_VERSION` in [lib/version.ts](lib/version.ts) (shown in the masthead) and gets a line here, so it's obvious at a glance whether the live site reflects the latest request.
 
+## Version 16 — 2026-08-17
+- **Manage tags**: a new button opens a modal to add, rename, recolor, or delete tags — shared with the whole team, not just local to your browser. Colors come from a curated 10-color palette (not free-form hex) so everything still looks like one consistent system; any tag can also opt into the "highlighted" treatment (bordered pill + accented card) that was previously just for InsuranceERM's own events. Tags moved from a hardcoded list to a real database table — existing events keep working exactly as before (the original six tags are seeded in automatically), and deleting a tag doesn't retag its events, they just show a plain grey label until edited.
+- **Calendar is now full-width**: removed the Upcoming side panel entirely. A small toolbar with the event count and a **See all** button now sits directly above the calendar instead. Day numbers, event bars, and weekday labels are all a bit bigger too, since the calendar now has the width the side panel used to take.
+
 ## Version 15 — 2026-08-16
 - **Two new tags**: "InsuranceERM Event" and "Webinar". InsuranceERM's own events get a deliberately different treatment from the rest of the tag set — a warm gold/amber accent, a bordered pill (the only tag pill with one), and a tinted background + accent stripe wherever they show up as a card — so they're easy to pick out at a glance from third-party events.
 - **Tag filter**: a row of toggleable chips ("Show: Industry event · Earnings · Editorial · Bank Holiday · InsuranceERM Event · Webinar") above the calendar. Click a tag to hide it — everywhere events show up (month grid, week view, Upcoming, See all) respects it, not just one list. "Show all" resets it.

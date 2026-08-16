@@ -1,20 +1,20 @@
 // Shared types for the Calendar tab. Kept in one place so the API routes,
 // the DB layer, and the UI all agree on what a tag is.
+//
+// Tags themselves used to be a hardcoded list here (EVENT_TAGS/TAG_LABELS).
+// They're now team-editable and live in the `tags` table — see lib/tags.ts
+// for the TagDef shape, the color palette, and the builtin seed list. An
+// event's `tag` is just whatever id was current when it was saved, so this
+// stays a plain string rather than a fixed union — a tag can be renamed or
+// deleted later without invalidating already-saved events (the UI falls
+// back to a plain grey label for a tag id that no longer exists).
+export type EventTag = string;
 
-export const EVENT_TAGS = ["event", "earnings", "editorial", "holiday", "insuranceerm", "webinar"] as const;
-export type EventTag = (typeof EVENT_TAGS)[number];
-
-export const TAG_LABELS: Record<EventTag, string> = {
-  event: "Industry event",
-  earnings: "Earnings",
-  editorial: "Editorial",
-  holiday: "Bank Holiday",
-  insuranceerm: "InsuranceERM Event",
-  webinar: "Webinar",
-};
-
+// Format check only, not membership in a fixed list — any non-empty, sane-
+// length string is accepted, since the valid set now lives in the database
+// and changes at runtime.
 export function isEventTag(value: unknown): value is EventTag {
-  return typeof value === "string" && (EVENT_TAGS as readonly string[]).includes(value);
+  return typeof value === "string" && value.trim().length > 0 && value.length <= 40;
 }
 
 export type CalendarEvent = {

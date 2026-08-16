@@ -4,6 +4,7 @@
 // no manual connection string needed. See README.md for the exact steps.
 import { randomUUID } from "crypto";
 import { sql } from "@vercel/postgres";
+import { BUILTIN_TAGS } from "@/lib/tags";
 
 let schemaReady: Promise<void> | null = null;
 
@@ -34,11 +35,35 @@ export function ensureSchema(): Promise<void> {
             created_at TIMESTAMPTZ NOT NULL DEFAULT now()
           );
         `,
+        sql`
+          CREATE TABLE IF NOT EXISTS tags (
+            id TEXT PRIMARY KEY,
+            label TEXT NOT NULL,
+            color TEXT NOT NULL,
+            highlight BOOLEAN NOT NULL DEFAULT FALSE,
+            sort_order INTEGER NOT NULL DEFAULT 0,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+          );
+        `,
       ]);
       // Migration for tables created before the optional event time field
       // existed — CREATE TABLE IF NOT EXISTS above is a no-op on a table
       // that's already there, so the new column has to be added separately.
       await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS event_time TEXT;`;
+      // One-time seed: the six tags that used to be hardcoded, so an
+      // existing deployment's events (already tagged "event", "earnings",
+      // etc.) keep resolving to a real label and color after the upgrade.
+      const { rows: tagCountRows } = await sql`SELECT COUNT(*)::int AS count FROM tags;`;
+      if (tagCountRows[0]?.count === 0) {
+        for (let i = 0; i < BUILTIN_TAGS.length; i++) {
+          const t = BUILTIN_TAGS[i];
+          await sql`
+            INSERT INTO tags (id, label, color, highlight, sort_order)
+            VALUES (${t.id}, ${t.label}, ${t.color}, ${t.highlight}, ${i})
+            ON CONFLICT (id) DO NOTHING;
+          `;
+        }
+      }
     })().catch((err) => {
       // Let the next call retry rather than caching a failed connection.
       schemaReady = null;

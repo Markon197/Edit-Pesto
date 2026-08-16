@@ -3,7 +3,7 @@
 Two tools for InsuranceERM in one app, sharing a masthead and tab nav:
 
 - **Edit** — a final proofing pass on articles before they go to the CMS. Paste a finished, edited article in on the left; get it back on the right with only genuine typos, grammar, spacing and style-guide issues fixed and marked inline — links, bold and italics untouched. Plus five headline options and a copy-ready list of the companies and people mentioned.
-- **Calendar** — a shared team calendar tagged Industry event / Earnings / Editorial / Bank Holiday, with three scan buttons that propose events to add: two AI-driven (industry events, earnings), one deterministic (UK bank holidays, pulled straight from gov.uk).
+- **Calendar** — a shared team calendar with team-editable tags (add/rename/recolor/delete your own, on top of the six built in), a tag filter, month and week views, and three ways to add events: manually, pasting raw text/AI output for Claude to format (Import events), or AI web-search scans (industry events, earnings — currently disabled; UK bank holidays, pulled straight from gov.uk, stays on).
 
 The style guide the Edit tab checks against lives in [`lib/styleGuide.ts`](lib/styleGuide.ts) — edit that file directly to change the rules.
 
@@ -15,15 +15,17 @@ The style guide the Edit tab checks against lives in [`lib/styleGuide.ts`](lib/s
 - `lib/styleGuide.ts` — the InsuranceERM style guide and the instructions given to the model.
 
 **Calendar tab**
-- `app/calendar/page.tsx` — the UI: a roomy month grid where multi-day events render as one spanning bar (not a dot per day), an Upcoming list that always matches the grid's height, add/edit-event forms, a single **🔍 Scan…** dropdown (Industry events / Earnings calendar / UK bank holidays) with an optional focus prompt for the two AI scans, and an event popup with **Edit** and **Export .ics** (opens directly in Outlook/Google/Apple Calendar).
+- `app/calendar/page.tsx` — the UI: a Month/Week toggle (week view is a day-by-day agenda, not an hour grid), a tag filter row, a wide single-column month grid where multi-day events render as one spanning bar (not a dot per day), add/edit-event forms (with an optional time field), a **Manage tags** modal, a single **🔍 Scan…** dropdown (Industry events / Earnings calendar / UK bank holidays — the two AI ones are currently disabled, see `SCANS_DISABLED`), an **Import events** paste box, a **See all** button above the grid (there's no permanent side list anymore), and an event popup with **Edit** and **Export .ics** (opens directly in Outlook/Google/Apple Calendar).
 - `app/api/events/route.ts` and `app/api/events/[id]/route.ts` — list/create/update/delete events in the shared database (PUT on `[id]` handles edits).
+- `app/api/tags/route.ts` and `app/api/tags/[id]/route.ts` — list/create/update/delete tags. A tag is an id/label/color(from a fixed palette)/highlight flag; deleting one doesn't retag its events, they just fall back to a plain grey pill.
 - `app/api/scan/events/route.ts` and `app/api/scan/earnings/route.ts` — the two AI scan buttons. Each calls Claude with web search turned on so results are grounded in real, current data, optionally steered by the user's focus text, then filters out anything already on the calendar before returning candidates (nothing is saved until you click **+**).
 - `app/api/holidays/route.ts` — the UK bank holidays button. No AI involved — pulls straight from gov.uk's own published data (england-and-wales), so it's fast, free, and always accurate.
-- `lib/calendarPrompts.ts` — the instructions given to the model for the two AI scans.
-- `lib/db.ts` / `lib/events.ts` / `lib/ics.ts` — the database client, shared types/tag list/row-mapping, and the .ics file generator.
+- `app/api/import/route.ts` — the Import events button. No web search — just asks Claude to extract and format events from text the user pastes in, tagging each one itself since a paste can mix event types.
+- `lib/calendarPrompts.ts` — the instructions given to the model for the two AI scans and the import feature.
+- `lib/db.ts` / `lib/events.ts` / `lib/tags.ts` / `lib/ics.ts` — the database client (incl. tag palette seeding), shared event types/row-mapping, the tag type/color palette/row-mapping, and the .ics file generator.
 
 **Usage stats**
-- `/stats` — a hidden page (not linked anywhere in the app) showing how often each button has been used: Edit checks, and each of the three scan types. Protected by the same site password as everything else — reach it by typing the URL directly.
+- `/stats` — a hidden page (not linked anywhere in the app) showing how often each button has been used: Edit checks, and each of the scan/import types. Protected by the same site password as everything else — reach it by typing the URL directly.
 - `app/api/stats/route.ts` reads from the `activity_log` table, written to by `logActivity()` in `lib/db.ts`.
 
 **Shared**
