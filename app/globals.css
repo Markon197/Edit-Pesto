@@ -708,6 +708,18 @@ button:disabled {
   color: var(--ink-soft);
   font-style: italic;
 }
+.cal-toolbar-actions {
+  display: flex;
+  gap: 8px;
+}
+.icon-btn.active {
+  background: var(--navy);
+  color: var(--panel);
+  border-color: var(--navy);
+}
+.icon-btn.active:hover {
+  background: var(--navy-deep);
+}
 
 .scan-menu-wrap {
   position: relative;
@@ -779,11 +791,28 @@ button.action:disabled {
   cursor: not-allowed;
 }
 
-/* Just the calendar now — the Upcoming side panel was removed in favour of
-   a "See all" button above the grid, so the calendar gets the full width
-   of main instead of splitting it with a sidebar. */
+/* Full-width by default — the Upcoming side panel is opt-in now (the
+   "List view" toggle), not permanent, so the calendar only gives up width
+   to it when someone's actually turned it on. */
 .cal-workspace {
   display: block;
+}
+.cal-workspace.with-list {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+  /* NOT stretch: CSS Grid's auto-height row sizing uses items' natural
+     content height even for a flexed/overflow-y:auto child, so letting the
+     list pane "stretch" here just made both panes balloon to fit every
+     event instead of scrolling. Both panes keep their own natural height;
+     the list pane's max-height is set to match the calendar's actual
+     rendered height in JS (the ResizeObserver in app/calendar/page.tsx). */
+  align-items: start;
+}
+@media (max-width: 920px) {
+  .cal-workspace.with-list {
+    grid-template-columns: 1fr;
+  }
 }
 
 .cal-pane-head {

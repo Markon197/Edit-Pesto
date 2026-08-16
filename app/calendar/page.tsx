@@ -254,12 +254,45 @@ function layoutWeek(week: Week, events: CalendarEvent[]): { bars: Bar[]; overflo
   return { bars, overflowCount };
 }
 
+const LIST_VIEW_STORAGE_KEY = "pestobot-cal-list-view";
+
 export default function CalendarPage() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loadingEvents, setLoadingEvents] = useState(true);
   const [listError, setListError] = useState<string | null>(null);
 
   const [tags, setTags] = useState<TagDef[]>([]);
+
+  // Optional side list of upcoming events, off by default (the calendar is
+  // full-width without it). Remembered per browser via localStorage so
+  // people who want it on don't have to re-toggle it every visit.
+  const [showListView, setShowListView] = useState(false);
+  useEffect(() => {
+    if (localStorage.getItem(LIST_VIEW_STORAGE_KEY) === "true") setShowListView(true);
+  }, []);
+  function toggleListView() {
+    setShowListView((v) => {
+      const next = !v;
+      localStorage.setItem(LIST_VIEW_STORAGE_KEY, String(next));
+      return next;
+    });
+  }
+
+  // Matches the list pane's height to the calendar's actual rendered
+  // height so it scrolls internally instead of growing the page to fit
+  // every event — see the longer explanation this used to carry in
+  // Version 11's changelog entry (same fix, reinstated now that the list
+  // is back as an optional pane instead of gone entirely).
+  const calPaneRef = useRef<HTMLDivElement>(null);
+  const [calHeight, setCalHeight] = useState<number | null>(null);
+  useEffect(() => {
+    if (!calPaneRef.current) return;
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) setCalHeight(entry.contentRect.height);
+    });
+    ro.observe(calPaneRef.current);
+    return () => ro.disconnect();
+  }, []);
 
   // Falls back to a plain grey pill for a tag id that no longer exists
   // (deleted since the event was tagged) instead of crashing or showing a
@@ -437,6 +470,13 @@ export default function CalendarPage() {
     () => [...visibleEvents].sort((a, b) => a.startDate.localeCompare(b.startDate)),
     [visibleEvents]
   );
+
+  const upcoming = useMemo(() => {
+    const t = todayISO();
+    return visibleEvents
+      .filter((ev) => (ev.endDate || ev.startDate) >= t)
+      .sort((a, b) => a.startDate.localeCompare(b.startDate));
+  }, [visibleEvents]);
 
   function openAddForm() {
     setAddForm({ ...EMPTY_ADD_FORM, startDate: todayISO() });
@@ -934,15 +974,24 @@ export default function CalendarPage() {
                   hiddenTags.size > 0 ? ` shown (${events.length} total)` : " on the calendar"
                 }`}
           </span>
-          {events.length > 0 && (
-            <button className="icon-btn" onClick={() => setShowAllEvents(true)}>
-              See all
+          <div className="cal-toolbar-actions">
+            <button
+              className={`icon-btn${showListView ? " active" : ""}`}
+              onClick={toggleListView}
+              aria-pressed={showListView}
+            >
+              📋 {showListView ? "Hide list" : "List view"}
             </button>
-          )}
+            {events.length > 0 && (
+              <button className="icon-btn" onClick={() => setShowAllEvents(true)}>
+                See all
+              </button>
+            )}
+          </div>
         </div>
 
-        <section className="cal-workspace">
-          <div className="pane">
+        <section className={`cal-workspace${showListView ? " with-list" : ""}`}>
+          <div className="pane" ref={calPaneRef}>
             <div className="pane-head cal-pane-head">
               <h2>
                 {viewMode === "month"
@@ -1068,6 +1117,40 @@ export default function CalendarPage() {
               ))}
             </div>
           </div>
+
+          {showListView && (
+            <div className="pane" style={calHeight ? { maxHeight: calHeight } : undefined}>
+              <div className="pane-head">
+                <h2>Upcoming</h2>
+                <span style={{ fontSize: ".8rem", color: "var(--ink-soft)", fontStyle: "italic" }}>
+                  {loadingEvents ? "Loading…" : `${upcoming.length} event${upcoming.length === 1 ? "" : "s"}`}
+                </span>
+              </div>
+              <ul className="event-list">
+                {!loadingEvents && upcoming.length === 0 && (
+                  <p className="empty-hint" style={{ padding: "0 4px" }}>
+                    Nothing upcoming yet — add one or run a scan.
+                  </p>
+                )}
+                {upcoming.map((ev) => {
+                  const t = resolveTag(ev.tag);
+                  return (
+                    <li className="event-card" key={ev.id} onClick={() => setModalEvent(ev)}>
+                      <div className="row1">
+                        <span className="title">{ev.title}</span>
+                        <span className="date">
+                          {formatShort(ev.startDate)}
+                          {ev.time ? `, ${formatTime(ev.time)}` : ""}
+                        </span>
+                      </div>
+                      <span className={tagPillClass(t)}>{t.label}</span>
+                      {ev.description && <div className="desc">{ev.description}</div>}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
         </section>
       </main>
 
