@@ -179,6 +179,11 @@ export default function CalendarPage() {
   const [viewMonth, setViewMonth] = useState(today.getMonth()); // 0-indexed
 
   const [modalEvent, setModalEvent] = useState<CalendarEvent | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState(EMPTY_ADD_FORM);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+
   const [showAddForm, setShowAddForm] = useState(false);
   const [addForm, setAddForm] = useState(EMPTY_ADD_FORM);
   const [addSaving, setAddSaving] = useState(false);
@@ -195,6 +200,11 @@ export default function CalendarPage() {
     earnings: null,
     holiday: null,
   });
+  const [scanMenuOpen, setScanMenuOpen] = useState(false);
+  const [customizeKind, setCustomizeKind] = useState<"event" | "earnings" | null>(null);
+  const [customizeText, setCustomizeText] = useState("");
+  const anyScanLoading = scans.event.loading || scans.earnings.loading || scans.holiday.loading;
+  const loadingScanKind = (["event", "earnings", "holiday"] as ScanKind[]).find((k) => scans[k].loading) ?? null;
 
   async function loadEvents() {
     setLoadingEvents(true);
@@ -278,6 +288,11 @@ export default function CalendarPage() {
     }
   }
 
+  function closeModal() {
+    setModalEvent(null);
+    setIsEditing(false);
+  }
+
   async function deleteEvent(id: string) {
     try {
       const res = await fetch(`/api/events/${id}`, { method: "DELETE" });
@@ -286,19 +301,73 @@ export default function CalendarPage() {
         throw new Error(data?.error || "Could not delete the event.");
       }
       setEvents((cur) => cur.filter((e) => e.id !== id));
-      setModalEvent(null);
+      closeModal();
     } catch (e) {
       alert(e instanceof Error ? e.message : "Could not delete the event.");
     }
   }
 
-  async function runScan(kind: ScanKind) {
+  function startEdit() {
+    if (!modalEvent) return;
+    setEditForm({
+      title: modalEvent.title,
+      tag: modalEvent.tag,
+      startDate: modalEvent.startDate,
+      endDate: modalEvent.endDate || "",
+      description: modalEvent.description,
+      link: modalEvent.link || "",
+    });
+    setEditError(null);
+    setIsEditing(true);
+  }
+
+  async function submitEditForm(e: React.FormEvent) {
+    e.preventDefault();
+    if (!modalEvent) return;
+    if (!editForm.title.trim() || !editForm.startDate) {
+      setEditError("An event needs at least a title and a start date.");
+      return;
+    }
+    setEditSaving(true);
+    setEditError(null);
+    try {
+      const res = await fetch(`/api/events/${modalEvent.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: editForm.title.trim(),
+          tag: editForm.tag,
+          startDate: editForm.startDate,
+          endDate: editForm.endDate || undefined,
+          description: editForm.description.trim(),
+          link: editForm.link.trim() || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Could not save changes.");
+      const updated = data.event as CalendarEvent;
+      setEvents((cur) => cur.map((ev) => (ev.id === updated.id ? updated : ev)));
+      setModalEvent(updated);
+      setIsEditing(false);
+    } catch (e) {
+      setEditError(e instanceof Error ? e.message : "Could not save changes.");
+    } finally {
+      setEditSaving(false);
+    }
+  }
+
+  async function runScan(kind: ScanKind, focus = "") {
     const controller = new AbortController();
     abortRefs.current[kind] = controller;
     setScans((s) => ({ ...s, [kind]: { ...EMPTY_SCAN, loading: true } }));
     setActiveScanPanel(kind);
     try {
-      const res = await fetch(SCAN_CONFIG[kind].url, { method: "POST", signal: controller.signal });
+      const res = await fetch(SCAN_CONFIG[kind].url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ focus }),
+        signal: controller.signal,
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "The scan failed.");
       setScans((s) => ({
@@ -370,18 +439,50 @@ export default function CalendarPage() {
           <button className="action btn-ghost" onClick={openAddForm}>
             + Add event
           </button>
-          {(["event", "earnings", "holiday"] as ScanKind[]).map((kind) => {
-            const st = scans[kind];
-            return (
-              <button
-                key={kind}
-                className="action btn-secondary"
-                onClick={() => (st.loading ? stopScan(kind) : runScan(kind))}
-              >
-                {st.loading ? "⏹ Stop scan" : SCAN_CONFIG[kind].buttonLabel}
+          <div className="scan-menu-wrap">
+            {anyScanLoading ? (
+              <button className="action btn-secondary" onClick={() => loadingScanKind && stopScan(loadingScanKind)}>
+                ⏹ Stop scan
               </button>
-            );
-          })}
+            ) : (
+              <button className="action btn-secondary" onClick={() => setScanMenuOpen((o) => !o)}>
+                🔍 Scan…
+              </button>
+            )}
+            {scanMenuOpen && !anyScanLoading && (
+              <>
+                <div className="scan-menu-backdrop" onClick={() => setScanMenuOpen(false)} />
+                <div className="scan-menu">
+                  <button
+                    onClick={() => {
+                      setScanMenuOpen(false);
+                      setCustomizeText("");
+                      setCustomizeKind("event");
+                    }}
+                  >
+                    🔍 Scan insurance events
+                  </button>
+                  <button
+                    onClick={() => {
+                      setScanMenuOpen(false);
+                      setCustomizeText("");
+                      setCustomizeKind("earnings");
+                    }}
+                  >
+                    🔍 Scan earnings calendar
+                  </button>
+                  <button
+                    onClick={() => {
+                      setScanMenuOpen(false);
+                      runScan("holiday");
+                    }}
+                  >
+                    📅 Add UK bank holidays
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
         {activeScanPanel &&
@@ -473,7 +574,7 @@ export default function CalendarPage() {
                   <div
                     key={wi}
                     className="cal-week"
-                    style={{ gridTemplateRows: `24px repeat(${maxLane + 1}, 20px)` }}
+                    style={{ gridTemplateRows: `32px repeat(${maxLane + 1}, 22px)` }}
                   >
                     {week.cells.map((c, ci) => (
                       <div
@@ -552,32 +653,164 @@ export default function CalendarPage() {
       </main>
 
       {modalEvent && (
-        <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setModalEvent(null)}>
+        <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && closeModal()}>
           <div className="modal">
-            <h3>{modalEvent.title}</h3>
-            <div className="date">{formatDateRange(modalEvent.startDate, modalEvent.endDate)}</div>
-            <span className={`tag-pill ${modalEvent.tag}`} style={{ marginBottom: 10 }}>
-              {TAG_LABELS[modalEvent.tag]}
-            </span>
-            {modalEvent.description && <p>{modalEvent.description}</p>}
-            {modalEvent.link && (
-              <p>
-                <a href={modalEvent.link} target="_blank" rel="noopener noreferrer">
-                  View source →
-                </a>
-              </p>
+            {isEditing ? (
+              <>
+                <h3>Edit event</h3>
+                <form className="event-form" onSubmit={submitEditForm}>
+                  {editError && <div className="error-banner">{editError}</div>}
+                  <label>
+                    Title
+                    <input
+                      type="text"
+                      value={editForm.title}
+                      onChange={(e) => setEditForm((f) => ({ ...f, title: e.target.value }))}
+                      required
+                    />
+                  </label>
+                  <label>
+                    Tag
+                    <select
+                      value={editForm.tag}
+                      onChange={(e) => setEditForm((f) => ({ ...f, tag: e.target.value as EventTag }))}
+                    >
+                      {EVENT_TAGS.map((t) => (
+                        <option key={t} value={t}>
+                          {TAG_LABELS[t]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <div className="form-row">
+                    <label>
+                      Start date
+                      <input
+                        type="date"
+                        value={editForm.startDate}
+                        onChange={(e) => setEditForm((f) => ({ ...f, startDate: e.target.value }))}
+                        required
+                      />
+                    </label>
+                    <label>
+                      End date (optional)
+                      <input
+                        type="date"
+                        value={editForm.endDate}
+                        onChange={(e) => setEditForm((f) => ({ ...f, endDate: e.target.value }))}
+                      />
+                    </label>
+                  </div>
+                  <label>
+                    Description
+                    <textarea
+                      value={editForm.description}
+                      onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))}
+                    />
+                  </label>
+                  <label>
+                    Link (optional)
+                    <input
+                      type="url"
+                      placeholder="https://…"
+                      value={editForm.link}
+                      onChange={(e) => setEditForm((f) => ({ ...f, link: e.target.value }))}
+                    />
+                  </label>
+                  <div className="modal-actions">
+                    <button
+                      type="button"
+                      className="action btn-ghost"
+                      onClick={() => setIsEditing(false)}
+                      disabled={editSaving}
+                    >
+                      Cancel
+                    </button>
+                    <button type="submit" className="action btn-primary" disabled={editSaving}>
+                      {editSaving ? "Saving…" : "Save changes"}
+                    </button>
+                  </div>
+                </form>
+              </>
+            ) : (
+              <>
+                <h3>{modalEvent.title}</h3>
+                <div className="date">{formatDateRange(modalEvent.startDate, modalEvent.endDate)}</div>
+                <span className={`tag-pill ${modalEvent.tag}`} style={{ marginBottom: 10 }}>
+                  {TAG_LABELS[modalEvent.tag]}
+                </span>
+                {modalEvent.description && <p>{modalEvent.description}</p>}
+                {modalEvent.link && (
+                  <p>
+                    <a href={modalEvent.link} target="_blank" rel="noopener noreferrer">
+                      View source →
+                    </a>
+                  </p>
+                )}
+                <div className="modal-actions">
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <button className="action btn-ghost" onClick={startEdit}>
+                      Edit
+                    </button>
+                    <button className="action btn-ghost" onClick={() => downloadIcs(modalEvent)}>
+                      Export .ics
+                    </button>
+                    <button className="action btn-ghost" onClick={closeModal}>
+                      Close
+                    </button>
+                  </div>
+                  <button className="action btn-danger" onClick={() => deleteEvent(modalEvent.id)}>
+                    Delete event
+                  </button>
+                </div>
+              </>
             )}
+          </div>
+        </div>
+      )}
+
+      {customizeKind && (
+        <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setCustomizeKind(null)}>
+          <div className="modal">
+            <h3>{customizeKind === "event" ? "Scan insurance events" : "Scan earnings calendar"}</h3>
+            <p style={{ fontSize: ".88rem", color: "var(--ink-soft)", marginTop: 0 }}>
+              Anything specific to focus on? Optional — a company, a region, a country, a topic. Leave blank for a
+              general scan.
+            </p>
+            <textarea
+              value={customizeText}
+              onChange={(e) => setCustomizeText(e.target.value)}
+              placeholder={
+                customizeKind === "event"
+                  ? "e.g. events in Japan, or focused on cyber insurance"
+                  : "e.g. only Lloyd's syndicates"
+              }
+              style={{
+                width: "100%",
+                minHeight: 70,
+                fontFamily: "inherit",
+                fontSize: ".95rem",
+                padding: "8px 10px",
+                border: "1px solid var(--line)",
+                borderRadius: 3,
+                background: "var(--paper)",
+                color: "var(--ink)",
+              }}
+            />
             <div className="modal-actions">
-              <div style={{ display: "flex", gap: 10 }}>
-                <button className="action btn-ghost" onClick={() => downloadIcs(modalEvent)}>
-                  Export .ics
-                </button>
-                <button className="action btn-ghost" onClick={() => setModalEvent(null)}>
-                  Close
-                </button>
-              </div>
-              <button className="action btn-danger" onClick={() => deleteEvent(modalEvent.id)}>
-                Delete event
+              <button className="action btn-ghost" onClick={() => setCustomizeKind(null)}>
+                Cancel
+              </button>
+              <button
+                className="action btn-primary"
+                onClick={() => {
+                  const kind = customizeKind;
+                  const focus = customizeText;
+                  setCustomizeKind(null);
+                  runScan(kind, focus);
+                }}
+              >
+                Run scan
               </button>
             </div>
           </div>

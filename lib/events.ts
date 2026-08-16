@@ -27,6 +27,28 @@ export type CalendarEvent = {
   createdAt: string;
 };
 
+// Postgres DATE columns come back as JS Date objects (midnight UTC) via
+// @vercel/postgres — format as YYYY-MM-DD without a timezone round-trip
+// shifting the day.
+export function toDateString(value: unknown): string {
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  return String(value).slice(0, 10);
+}
+
+export function rowToEvent(row: any): CalendarEvent {
+  return {
+    id: row.id,
+    title: row.title,
+    tag: row.tag,
+    startDate: toDateString(row.start_date),
+    endDate: row.end_date ? toDateString(row.end_date) : null,
+    description: row.description ?? "",
+    link: row.link ?? null,
+    source: row.source === "ai-scan" ? "ai-scan" : "manual",
+    createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : String(row.created_at),
+  };
+}
+
 // A simple, deliberately non-fuzzy dedup check: normalizes whitespace/case
 // and treats a candidate as a duplicate if its title contains, or is
 // contained by, an existing event's title. Good enough for "don't show

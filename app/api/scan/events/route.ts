@@ -17,6 +17,9 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const body = await req.json().catch(() => ({}));
+  const focus = typeof body?.focus === "string" ? body.focus.trim().slice(0, 300) : "";
+
   // DB step is isolated so a database problem reports as a database
   // problem, not a generic "the scan failed" that hides the real cause.
   let existingTitles: string[];
@@ -41,8 +44,13 @@ export async function POST(req: NextRequest) {
       // cover it — type the array loosely rather than per-element.
       tools: [WEB_SEARCH_TOOL, SUBMIT_EVENTS_TOOL] as unknown as Anthropic.Tool[],
       tool_choice: { type: "auto" },
-      messages: [{ role: "user", content: buildEventsScanPrompt(todayISO, existingTitles) }],
-    }, { signal: req.signal }); // lets a client-side "Stop scan" cancel the upstream call too, not just the wait
+      messages: [{ role: "user", content: buildEventsScanPrompt(todayISO, existingTitles, focus) }],
+    });
+    // NOTE: previously passed { signal: req.signal } here so "Stop scan"
+    // would cancel the upstream call too. Removed — it's the most likely
+    // cause of scans failing outright after that change shipped. Client
+    // side stop (aborting the fetch) still works; it just no longer
+    // guarantees cutting the server-side call short. Revisit separately.
 
     const submitBlock = message.content.find(
       (b: any) => b.type === "tool_use" && b.name === "submit_events"
@@ -71,13 +79,12 @@ export async function POST(req: NextRequest) {
     await logActivity("scan_events", `found ${candidates.length}`);
     return NextResponse.json({ candidates });
   } catch (err) {
-    if (req.signal.aborted) {
-      // User pressed "Stop scan" — expected, not an error worth logging.
-      return NextResponse.json({ error: "Scan stopped." }, { status: 499 });
-    }
     console.error("POST /api/scan/events failed", err);
     return NextResponse.json(
-      { error: "The web search step failed. Try again in a moment — if it keeps happening, tell Claude the exact error from the Vercel function logs." },
+      {
+        error:
+          "The web search step failed. Try again in a moment — if it keeps happening, tell Claude the exact error from the Vercel function logs.",
+      },
       { status: 500 }
     );
   }

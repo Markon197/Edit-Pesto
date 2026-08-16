@@ -64,7 +64,11 @@ export const SUBMIT_EARNINGS_TOOL = {
   },
 };
 
-export function buildEventsScanPrompt(todayISO: string, existingTitles: string[]): string {
+function focusLine(focus: string): string {
+  return focus ? `\n\nThe person running this search asked you to specifically focus on: "${focus}". Weight your search toward that, but stay within the rules above.` : "";
+}
+
+export function buildEventsScanPrompt(todayISO: string, existingTitles: string[], focus = ""): string {
   const exclude = existingTitles.length ? existingTitles.join("; ") : "(nothing yet — the calendar is empty)";
   return `You are researching upcoming insurance industry events for InsuranceERM, a trade publication whose audience is UK/Europe-weighted but globally aware. Today's date is ${todayISO}.
 
@@ -72,7 +76,7 @@ Search the web and find at least 5 upcoming conferences, summits, or industry ga
 
 Do not include any of the following — they are already on the calendar: ${exclude}
 
-For each event, give an exact start date (and end date if it spans multiple days) in YYYY-MM-DD, a one-sentence factual description, and a link to the event's official page if you found one. Only include events you found real, current evidence for — do not guess a date.
+For each event, give an exact start date (and end date if it spans multiple days) in YYYY-MM-DD, a one-sentence factual description, and a link to the event's official page if you found one. Only include events you found real, current evidence for — do not guess a date.${focusLine(focus)}
 
 Submit your findings only via the submit_events tool, no other commentary.`;
 }
@@ -80,7 +84,8 @@ Submit your findings only via the submit_events tool, no other commentary.`;
 export function buildEarningsScanPrompt(
   todayISO: string,
   windowEndISO: string,
-  existingKeys: string[]
+  existingKeys: string[],
+  focus = ""
 ): string {
   const exclude = existingKeys.length ? existingKeys.join("; ") : "(nothing yet)";
   return `You are researching insurance-sector earnings dates for InsuranceERM. Today's date is ${todayISO}.
@@ -89,7 +94,7 @@ Search the web and find major insurance and reinsurance companies relevant to a 
 
 Do not include any of the following — they are already on the calendar: ${exclude}
 
-For each, give the company name, the exact reporting date in YYYY-MM-DD, a short description (e.g. "H1 2026 results" or "Q3 2026 results" — the results themselves, not the analyst call, since the call is same-day), and a link to their investor relations page if found. Only include companies you found real, current evidence for. If nothing qualifies in this window, submit an empty list rather than including anything outside it.
+For each, give the company name, the exact reporting date in YYYY-MM-DD, a short description (e.g. "H1 2026 results" or "Q3 2026 results" — the results themselves, not the analyst call, since the call is same-day), and a link to their investor relations page if found. Only include companies you found real, current evidence for. If nothing qualifies in this window, submit an empty list rather than including anything outside it.${focusLine(focus)}
 
 Submit your findings only via the submit_earnings tool, no other commentary.`;
 }

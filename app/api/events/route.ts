@@ -1,31 +1,9 @@
 import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { ensureSchema, friendlyDbError, sql } from "@/lib/db";
-import { isEventTag, type CalendarEvent } from "@/lib/events";
+import { isEventTag, rowToEvent } from "@/lib/events";
 
 export const runtime = "nodejs";
-
-function rowToEvent(row: any): CalendarEvent {
-  return {
-    id: row.id,
-    title: row.title,
-    tag: row.tag,
-    startDate: toDateString(row.start_date),
-    endDate: row.end_date ? toDateString(row.end_date) : null,
-    description: row.description ?? "",
-    link: row.link ?? null,
-    source: row.source === "ai-scan" ? "ai-scan" : "manual",
-    createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : String(row.created_at),
-  };
-}
-
-// Postgres DATE columns come back as JS Date objects (midnight UTC) via
-// @vercel/postgres — format as YYYY-MM-DD without a timezone round-trip
-// shifting the day.
-function toDateString(value: unknown): string {
-  if (value instanceof Date) return value.toISOString().slice(0, 10);
-  return String(value).slice(0, 10);
-}
 
 export async function GET() {
   try {

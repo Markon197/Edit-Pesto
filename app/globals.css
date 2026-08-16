@@ -634,6 +634,48 @@ button:disabled {
   flex-wrap: wrap;
   margin-bottom: 18px;
 }
+.scan-menu-wrap {
+  position: relative;
+  display: inline-block;
+}
+.scan-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+}
+.scan-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 6px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  min-width: 230px;
+  display: flex;
+  flex-direction: column;
+  z-index: 5;
+  overflow: hidden;
+}
+.scan-menu button {
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 11px 16px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--ink);
+  cursor: pointer;
+}
+.scan-menu button:hover {
+  background: var(--navy-tint);
+}
+.scan-menu button + button {
+  border-top: 1px solid var(--line);
+}
 button.action {
   font-family: Georgia, "Times New Roman", serif;
   font-size: 0.88rem;
@@ -652,7 +694,9 @@ button.action:disabled {
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: 20px;
-  align-items: start;
+  /* stretch (the default) so both panes match height — the Upcoming list
+     fills the same vertical space as the calendar instead of shrinking to
+     fit its own content. */
 }
 @media (max-width: 920px) {
   .cal-workspace {
@@ -706,13 +750,14 @@ button.action:disabled {
   grid-template-columns: repeat(7, 1fr);
   border: 1px solid var(--line);
   border-top: none;
+  min-height: 96px;
 }
 .cal-week:first-child {
   border-top: 1px solid var(--line);
 }
 .cal-daynum {
-  padding: 4px 6px 2px;
-  font-size: 0.8rem;
+  padding: 6px 8px 2px;
+  font-size: 0.92rem;
   color: var(--ink-soft);
   border-right: 1px solid var(--line);
 }
@@ -800,7 +845,8 @@ button.action:disabled {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  max-height: 560px;
+  flex: 1;
+  min-height: 0; /* lets overflow-y actually kick in inside a flex column */
   overflow-y: auto;
 }
 .event-card {

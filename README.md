@@ -15,12 +15,12 @@ The style guide the Edit tab checks against lives in [`lib/styleGuide.ts`](lib/s
 - `lib/styleGuide.ts` — the InsuranceERM style guide and the instructions given to the model.
 
 **Calendar tab**
-- `app/calendar/page.tsx` — the UI: a month grid where multi-day events render as one spanning bar (not a dot per day), the upcoming list, add-event form, scan panels, event popup with an **Export .ics** button (opens directly in Outlook/Google/Apple Calendar).
-- `app/api/events/route.ts` and `app/api/events/[id]/route.ts` — list/create/delete events in the shared database.
-- `app/api/scan/events/route.ts` and `app/api/scan/earnings/route.ts` — the two AI scan buttons. Each calls Claude with web search turned on so results are grounded in real, current data, then filters out anything already on the calendar before returning candidates (nothing is saved until you click **+**). Each also wires the request's abort signal through to the Claude call, so pressing **Stop scan** actually cancels the upstream call, not just the wait.
+- `app/calendar/page.tsx` — the UI: a roomy month grid where multi-day events render as one spanning bar (not a dot per day), an Upcoming list that always matches the grid's height, add/edit-event forms, a single **🔍 Scan…** dropdown (Industry events / Earnings calendar / UK bank holidays) with an optional focus prompt for the two AI scans, and an event popup with **Edit** and **Export .ics** (opens directly in Outlook/Google/Apple Calendar).
+- `app/api/events/route.ts` and `app/api/events/[id]/route.ts` — list/create/update/delete events in the shared database (PUT on `[id]` handles edits).
+- `app/api/scan/events/route.ts` and `app/api/scan/earnings/route.ts` — the two AI scan buttons. Each calls Claude with web search turned on so results are grounded in real, current data, optionally steered by the user's focus text, then filters out anything already on the calendar before returning candidates (nothing is saved until you click **+**).
 - `app/api/holidays/route.ts` — the UK bank holidays button. No AI involved — pulls straight from gov.uk's own published data (england-and-wales), so it's fast, free, and always accurate.
 - `lib/calendarPrompts.ts` — the instructions given to the model for the two AI scans.
-- `lib/db.ts` / `lib/events.ts` / `lib/ics.ts` — the database client, shared types/tag list, and the .ics file generator.
+- `lib/db.ts` / `lib/events.ts` / `lib/ics.ts` — the database client, shared types/tag list/row-mapping, and the .ics file generator.
 
 **Usage stats**
 - `/stats` — a hidden page (not linked anywhere in the app) showing how often each button has been used: Edit checks, and each of the three scan types. Protected by the same site password as everything else — reach it by typing the URL directly.

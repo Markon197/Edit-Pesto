@@ -2,6 +2,14 @@
 
 Every shipped change bumps `APP_VERSION` in [lib/version.ts](lib/version.ts) (shown in the masthead) and gets a line here, so it's obvious at a glance whether the live site reflects the latest request.
 
+## Version 7 — 2026-08-05
+- **Fixed the scan buttons** — likely regression from Version 6's "cancel the upstream call on Stop" change (removed it; Stop still stops your own wait immediately, just doesn't guarantee cutting the server-side call short anymore). If scans still fail after this, the exact error text from Vercel's function logs is what I need to go further.
+- Calendar rows are noticeably roomier now (taller, more like an ordinary month calendar), while keeping the bar-based rendering.
+- The Upcoming list now always matches the calendar's height exactly (equal-height panes), instead of shrinking to its own content.
+- Event popups have an **Edit** button — change the title, tag, dates, description, or link on any event, including ones added by a scan.
+- The three scan buttons are now one **🔍 Scan…** button with a dropdown (Industry events / Earnings calendar / UK bank holidays).
+- The two AI scans now ask first: an optional "anything specific to focus on?" step (e.g. a country, a company) before running — bank holidays skips this since there's nothing to customize.
+
 ## Version 6 — 2026-08-05
 - Scan buttons now show a pasta-bowl loading animation while running, and turn into a **Stop scan** button — pressing it cancels the request all the way through to the Claude call, so an accidental press doesn't burn tokens.
 - Calendar redesign: multi-day events render as one spanning bar across the days they cover (Google Calendar-style) instead of a dot repeated per day; single-day events show their title directly in the grid, not just a colored dot.
