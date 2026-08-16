@@ -98,6 +98,11 @@ const EMPTY_ADD_FORM = {
 type DayCell = { day: number; iso: string } | null;
 type Week = { cells: DayCell[] };
 
+// Always exactly 6 week rows (padding with a blank trailing week if the
+// month only needs 5), the way Google Calendar's month view does — so the
+// grid's total height never shifts between a "short" and a "long" month.
+const WEEKS_PER_GRID = 6;
+
 function buildWeeks(year: number, month: number): Week[] {
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const first = new Date(year, month, 1);
@@ -115,12 +120,18 @@ function buildWeeks(year: number, month: number): Week[] {
     while (cells.length < 7) cells.push(null);
     weeks.push({ cells });
   }
+  while (weeks.length < WEEKS_PER_GRID) {
+    weeks.push({ cells: new Array(7).fill(null) });
+  }
   return weeks;
 }
 
 type Bar = { event: CalendarEvent; startCol: number; endCol: number; lane: number };
 
-const MAX_LANES_PER_WEEK = 4;
+// Fixed at 2 so every week reserves exactly the same height: a header row,
+// 2 bar lanes, and one more row that's either blank or a "+N more" — never
+// taller just because that particular week happens to be busy.
+const MAX_LANES_PER_WEEK = 2;
 
 function layoutWeek(week: Week, events: CalendarEvent[]): { bars: Bar[]; overflowCount: number } {
   const real = week.cells.filter((c): c is { day: number; iso: string } => c !== null);
@@ -195,6 +206,7 @@ export default function CalendarPage() {
     holiday: EMPTY_SCAN,
   });
   const [activeScanPanel, setActiveScanPanel] = useState<ScanKind | null>(null);
+  const [scanPanelCollapsed, setScanPanelCollapsed] = useState(false);
   const abortRefs = useRef<Record<ScanKind, AbortController | null>>({
     event: null,
     earnings: null,
@@ -361,6 +373,7 @@ export default function CalendarPage() {
     abortRefs.current[kind] = controller;
     setScans((s) => ({ ...s, [kind]: { ...EMPTY_SCAN, loading: true } }));
     setActiveScanPanel(kind);
+    setScanPanelCollapsed(false);
     try {
       const res = await fetch(SCAN_CONFIG[kind].url, {
         method: "POST",
@@ -497,48 +510,74 @@ export default function CalendarPage() {
               );
             }
             if (!st.candidates && !st.error) return null;
+
+            const title = st.error
+              ? "Scan failed"
+              : st.candidates!.length === 0
+              ? "Nothing new found"
+              : `Found ${st.candidates!.length} new item${st.candidates!.length === 1 ? "" : "s"}`;
+
+            function dismiss() {
+              setActiveScanPanel(null);
+              setScanPanelCollapsed(false);
+            }
+
             return (
               <div className={`scan-panel scan-panel-${kind}`}>
-                {st.error ? (
-                  <p className="scan-note">{st.error}</p>
-                ) : (
-                  <>
-                    <h3>
-                      {st.candidates!.length === 0
-                        ? "Nothing new found"
-                        : `Found ${st.candidates!.length} new item${st.candidates!.length === 1 ? "" : "s"}`}
-                    </h3>
-                    <p className="scan-note">
-                      {kind === "earnings" &&
-                        `Only covers ${formatDateRange(todayIsoStr, st.windowEndISO || todayIsoStr)} — nothing further out shows here. `}
-                      Already-added items are left out automatically.
-                    </p>
-                    {st.candidates!.map((c) => {
-                      const key = c.title + c.startDate;
-                      const added = st.addedKeys.has(key);
-                      return (
-                        <div className="scan-result" key={key}>
-                          <div className="info">
-                            <strong>{c.title}</strong>{" "}
-                            <span className="d">
-                              — {formatDateRange(c.startDate, c.endDate)}
-                              {c.location ? `, ${c.location}` : ""}
-                            </span>
-                            {c.description && <div className="desc">{c.description}</div>}
+                <div className="scan-panel-head">
+                  <h3>{title}</h3>
+                  <div className="scan-panel-controls">
+                    {!st.error && (
+                      <button
+                        className="scan-panel-btn"
+                        onClick={() => setScanPanelCollapsed((c) => !c)}
+                        aria-label={scanPanelCollapsed ? "Expand results" : "Minimize results"}
+                        title={scanPanelCollapsed ? "Expand" : "Minimize — done reviewing, get it out of the way"}
+                      >
+                        {scanPanelCollapsed ? "▸" : "▾"}
+                      </button>
+                    )}
+                    <button className="scan-panel-btn" onClick={dismiss} aria-label="Dismiss">
+                      ✕
+                    </button>
+                  </div>
+                </div>
+                {!scanPanelCollapsed &&
+                  (st.error ? (
+                    <p className="scan-note">{st.error}</p>
+                  ) : (
+                    <>
+                      <p className="scan-note">
+                        {kind === "earnings" &&
+                          `Only covers ${formatDateRange(todayIsoStr, st.windowEndISO || todayIsoStr)} — nothing further out shows here. `}
+                        Already-added items are left out automatically.
+                      </p>
+                      {st.candidates!.map((c) => {
+                        const key = c.title + c.startDate;
+                        const added = st.addedKeys.has(key);
+                        return (
+                          <div className="scan-result" key={key}>
+                            <div className="info">
+                              <strong>{c.title}</strong>{" "}
+                              <span className="d">
+                                — {formatDateRange(c.startDate, c.endDate)}
+                                {c.location ? `, ${c.location}` : ""}
+                              </span>
+                              {c.description && <div className="desc">{c.description}</div>}
+                            </div>
+                            <button
+                              className="add-btn"
+                              disabled={added}
+                              onClick={() => addCandidate(kind, c)}
+                              aria-label={`Add ${c.title} to the calendar`}
+                            >
+                              {added ? "✓" : "+"}
+                            </button>
                           </div>
-                          <button
-                            className="add-btn"
-                            disabled={added}
-                            onClick={() => addCandidate(kind, c)}
-                            aria-label={`Add ${c.title} to the calendar`}
-                          >
-                            {added ? "✓" : "+"}
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </>
-                )}
+                        );
+                      })}
+                    </>
+                  ))}
               </div>
             );
           })()}
@@ -569,13 +608,8 @@ export default function CalendarPage() {
               </div>
               {weeks.map((week, wi) => {
                 const { bars, overflowCount } = weekLayouts[wi];
-                const maxLane = bars.reduce((m, b) => Math.max(m, b.lane), -1);
                 return (
-                  <div
-                    key={wi}
-                    className="cal-week"
-                    style={{ gridTemplateRows: `32px repeat(${maxLane + 1}, 22px)` }}
-                  >
+                  <div key={wi} className="cal-week">
                     {week.cells.map((c, ci) => (
                       <div
                         key={ci}
@@ -597,10 +631,7 @@ export default function CalendarPage() {
                       </div>
                     ))}
                     {overflowCount > 0 && (
-                      <div
-                        className="cal-bar-overflow"
-                        style={{ gridColumn: "1 / 8", gridRow: maxLane + 3 }}
-                      >
+                      <div className="cal-bar-overflow" style={{ gridColumn: "1 / 8", gridRow: MAX_LANES_PER_WEEK + 2 }}>
                         +{overflowCount} more this week
                       </div>
                     )}

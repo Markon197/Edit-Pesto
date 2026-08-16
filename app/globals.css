@@ -748,9 +748,13 @@ button.action:disabled {
 .cal-week {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
+  /* Fixed, not content-sized: every week is exactly the same height,
+     whatever it holds — a header row, 2 event-bar lanes, and a row for
+     "+N more" that's just empty when there's nothing to overflow. This
+     is what keeps the whole grid the same size every month. */
+  grid-template-rows: 32px repeat(2, 22px) 18px;
   border: 1px solid var(--line);
   border-top: none;
-  min-height: 96px;
 }
 .cal-week:first-child {
   border-top: 1px solid var(--line);
@@ -926,6 +930,12 @@ button.action:disabled {
 .scan-panel .checking-state {
   padding: 10px 0 4px;
 }
+.scan-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
 .scan-panel h3 {
   margin: 0 0 4px;
   font-size: 0.8rem;
@@ -933,11 +943,34 @@ button.action:disabled {
   letter-spacing: 0.08em;
   color: var(--navy);
 }
+.scan-panel-head h3 {
+  margin: 0;
+}
 .scan-panel-earnings h3 {
   color: var(--earn);
 }
 .scan-panel-holiday h3 {
   color: var(--holiday);
+}
+.scan-panel-controls {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.scan-panel-btn {
+  background: transparent;
+  border: 1px solid currentColor;
+  color: inherit;
+  opacity: 0.65;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  font-size: 0.75rem;
+  border-radius: 3px;
+  cursor: pointer;
+}
+.scan-panel-btn:hover {
+  opacity: 1;
 }
 .scan-panel .scan-note {
   font-size: 0.82rem;

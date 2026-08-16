@@ -2,6 +2,11 @@
 
 Every shipped change bumps `APP_VERSION` in [lib/version.ts](lib/version.ts) (shown in the masthead) and gets a line here, so it's obvious at a glance whether the live site reflects the latest request.
 
+## Version 9 — 2026-08-16
+- Calendar grid is now truly fixed-size, like Google Calendar's month view: always exactly 6 week rows, each exactly the same height, regardless of how many events are in a given week (busy weeks show up to 2 event bars + a "+N more" instead of growing taller). Verified two months — one packed with events, one empty — render at the exact same pixel height.
+- The Upcoming list now automatically matches that same fixed height, instead of stretching to whatever the calendar happened to need that month.
+- Finished scan results can be minimized (▾/▸, collapses back to just the header) or dismissed entirely (✕) — no more losing calendar real estate to a scan you're done reviewing.
+
 ## Version 8 — 2026-08-16
 - **Cost fix**: the web_search tool had no cap on how many searches Claude could run per scan — the earnings prompt in particular listed a dozen companies by name, which likely pushed it to search each one individually (~20 searches per scan observed). Added `max_uses` (6 for events, 5 for earnings) and rewrote both prompts to explicitly ask for a few broad queries instead of one-per-item.
 
