@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Masthead from "@/components/Masthead";
 import PastaLoader from "@/components/PastaLoader";
+import { fetchJson } from "@/lib/fetchJson";
 
 type CheckResult = {
   annotatedHtml: string;
@@ -127,13 +128,11 @@ export default function Home() {
     setError(null);
     setResult(null);
     try {
-      const res = await fetch("/api/check", {
+      const data = await fetchJson("/api/check", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ html }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || "Something went wrong.");
       setResult(data as CheckResult);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong. Try again.");

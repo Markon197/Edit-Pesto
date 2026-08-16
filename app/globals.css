@@ -752,7 +752,7 @@ button.action:disabled {
      whatever it holds — a header row, 2 event-bar lanes, and a row for
      "+N more" that's just empty when there's nothing to overflow. This
      is what keeps the whole grid the same size every month. */
-  grid-template-rows: 32px repeat(2, 22px) 18px;
+  grid-template-rows: 40px repeat(2, 26px) 20px;
   border: 1px solid var(--line);
   border-top: none;
 }
@@ -760,7 +760,10 @@ button.action:disabled {
   border-top: 1px solid var(--line);
 }
 .cal-daynum {
-  padding: 6px 8px 2px;
+  /* Spans every row of the week (set via inline gridRow: "1 / -1") so its
+     border-right runs the full height of the row, like a real spreadsheet
+     column line — not just alongside the day number at the top. */
+  padding: 8px 8px 2px;
   font-size: 0.92rem;
   color: var(--ink-soft);
   border-right: 1px solid var(--line);
@@ -1047,6 +1050,13 @@ button.action:disabled {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
   max-height: 85vh;
   overflow-y: auto;
+}
+.modal-wide {
+  max-width: 560px;
+}
+.event-list-modal {
+  max-height: 60vh;
+  padding: 12px 0 0;
 }
 .modal h3 {
   margin: 0 0 4px;

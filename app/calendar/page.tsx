@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Masthead from "@/components/Masthead";
 import PastaLoader from "@/components/PastaLoader";
 import { downloadIcs } from "@/lib/ics";
+import { fetchJson } from "@/lib/fetchJson";
 import { EVENT_TAGS, TAG_LABELS, type CalendarEvent, type EventTag } from "@/lib/events";
 
 type ScanCandidate = {
@@ -190,6 +191,7 @@ export default function CalendarPage() {
   const [viewMonth, setViewMonth] = useState(today.getMonth()); // 0-indexed
 
   const [modalEvent, setModalEvent] = useState<CalendarEvent | null>(null);
+  const [showAllEvents, setShowAllEvents] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState(EMPTY_ADD_FORM);
   const [editSaving, setEditSaving] = useState(false);
@@ -222,10 +224,8 @@ export default function CalendarPage() {
     setLoadingEvents(true);
     setListError(null);
     try {
-      const res = await fetch("/api/events");
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || "Could not load the calendar.");
-      setEvents(data.events as CalendarEvent[]);
+      const data = await fetchJson("/api/events");
+      setEvents(Array.isArray(data.events) ? (data.events as CalendarEvent[]) : []);
     } catch (e) {
       setListError(e instanceof Error ? e.message : "Could not load the calendar.");
     } finally {
@@ -261,6 +261,11 @@ export default function CalendarPage() {
       .sort((a, b) => a.startDate.localeCompare(b.startDate));
   }, [events]);
 
+  const allEventsSorted = useMemo(
+    () => [...events].sort((a, b) => a.startDate.localeCompare(b.startDate)),
+    [events]
+  );
+
   function openAddForm() {
     setAddForm({ ...EMPTY_ADD_FORM, startDate: todayISO() });
     setAddError(null);
@@ -276,7 +281,7 @@ export default function CalendarPage() {
     setAddSaving(true);
     setAddError(null);
     try {
-      const res = await fetch("/api/events", {
+      const data = await fetchJson("/api/events", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -289,8 +294,6 @@ export default function CalendarPage() {
           source: "manual",
         }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || "Could not save the event.");
       setEvents((cur) => [...cur, data.event as CalendarEvent]);
       setShowAddForm(false);
     } catch (e) {
@@ -307,11 +310,7 @@ export default function CalendarPage() {
 
   async function deleteEvent(id: string) {
     try {
-      const res = await fetch(`/api/events/${id}`, { method: "DELETE" });
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        throw new Error(data?.error || "Could not delete the event.");
-      }
+      await fetchJson(`/api/events/${id}`, { method: "DELETE" });
       setEvents((cur) => cur.filter((e) => e.id !== id));
       closeModal();
     } catch (e) {
@@ -343,7 +342,7 @@ export default function CalendarPage() {
     setEditSaving(true);
     setEditError(null);
     try {
-      const res = await fetch(`/api/events/${modalEvent.id}`, {
+      const data = await fetchJson(`/api/events/${modalEvent.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -355,8 +354,6 @@ export default function CalendarPage() {
           link: editForm.link.trim() || undefined,
         }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || "Could not save changes.");
       const updated = data.event as CalendarEvent;
       setEvents((cur) => cur.map((ev) => (ev.id === updated.id ? updated : ev)));
       setModalEvent(updated);
@@ -375,14 +372,12 @@ export default function CalendarPage() {
     setActiveScanPanel(kind);
     setScanPanelCollapsed(false);
     try {
-      const res = await fetch(SCAN_CONFIG[kind].url, {
+      const data = await fetchJson(SCAN_CONFIG[kind].url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ focus }),
         signal: controller.signal,
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || "The scan failed.");
       setScans((s) => ({
         ...s,
         [kind]: {
@@ -416,7 +411,7 @@ export default function CalendarPage() {
   async function addCandidate(kind: ScanKind, candidate: ScanCandidate) {
     const key = candidate.title + candidate.startDate;
     try {
-      const res = await fetch("/api/events", {
+      const data = await fetchJson("/api/events", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -429,8 +424,6 @@ export default function CalendarPage() {
           source: "ai-scan",
         }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || "Could not add that event.");
       setEvents((cur) => [...cur, data.event as CalendarEvent]);
       setScans((s) => ({
         ...s,
@@ -614,7 +607,7 @@ export default function CalendarPage() {
                       <div
                         key={ci}
                         className={`cal-daynum${c ? "" : " empty"}${c && c.iso === todayIsoStr ? " today" : ""}`}
-                        style={{ gridColumn: ci + 1, gridRow: 1 }}
+                        style={{ gridColumn: ci + 1, gridRow: "1 / -1" }}
                       >
                         {c ? c.day : ""}
                       </div>
@@ -658,9 +651,16 @@ export default function CalendarPage() {
           <div className="pane">
             <div className="pane-head">
               <h2>Upcoming</h2>
-              <span style={{ fontSize: ".8rem", color: "var(--ink-soft)", fontStyle: "italic" }}>
-                {loadingEvents ? "Loading…" : `${upcoming.length} event${upcoming.length === 1 ? "" : "s"}`}
-              </span>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: ".8rem", color: "var(--ink-soft)", fontStyle: "italic" }}>
+                  {loadingEvents ? "Loading…" : `${upcoming.length} event${upcoming.length === 1 ? "" : "s"}`}
+                </span>
+                {events.length > 0 && (
+                  <button className="icon-btn" onClick={() => setShowAllEvents(true)}>
+                    See all
+                  </button>
+                )}
+              </div>
             </div>
             <ul className="event-list">
               {!loadingEvents && upcoming.length === 0 && (
@@ -682,6 +682,38 @@ export default function CalendarPage() {
           </div>
         </section>
       </main>
+
+      {showAllEvents && (
+        <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setShowAllEvents(false)}>
+          <div className="modal modal-wide">
+            <h3>All events ({events.length})</h3>
+            <ul className="event-list event-list-modal">
+              {allEventsSorted.map((ev) => (
+                <li
+                  className="event-card"
+                  key={ev.id}
+                  onClick={() => {
+                    setShowAllEvents(false);
+                    setModalEvent(ev);
+                  }}
+                >
+                  <div className="row1">
+                    <span className="title">{ev.title}</span>
+                    <span className="date">{formatShort(ev.startDate)}</span>
+                  </div>
+                  <span className={`tag-pill ${ev.tag}`}>{TAG_LABELS[ev.tag]}</span>
+                  {ev.description && <div className="desc">{ev.description}</div>}
+                </li>
+              ))}
+            </ul>
+            <div className="modal-actions">
+              <button className="action btn-ghost" onClick={() => setShowAllEvents(false)}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {modalEvent && (
         <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && closeModal()}>

@@ -2,6 +2,12 @@
 
 Every shipped change bumps `APP_VERSION` in [lib/version.ts](lib/version.ts) (shown in the masthead) and gets a line here, so it's obvious at a glance whether the live site reflects the latest request.
 
+## Version 10 — 2026-08-16
+- **Fixed a crash on scan errors**: if a scan request ever came back as a non-JSON response (e.g. a Vercel timeout page), the app tried to `JSON.parse` it directly and threw an ugly, uncaught error. All fetches (Edit tab, Calendar, Stats) now go through a shared `fetchJson` helper that reads the response safely first and always surfaces a clean, readable error message instead of crashing.
+- **Fixed the calendar's grid lines**: the vertical lines between day columns were only drawing next to the date number, not running the full height of the week row, so the grid looked broken/incomplete. They now run edge-to-edge like a proper spreadsheet or Google Calendar.
+- Calendar rows are taller again for more breathing room.
+- Upcoming list now shows the next 7 events and scrolls for the rest, plus a **See all** button that opens the full, scrollable list of every event on the calendar.
+
 ## Version 9 — 2026-08-16
 - Calendar grid is now truly fixed-size, like Google Calendar's month view: always exactly 6 week rows, each exactly the same height, regardless of how many events are in a given week (busy weeks show up to 2 event bars + a "+N more" instead of growing taller). Verified two months — one packed with events, one empty — render at the exact same pixel height.
 - The Upcoming list now automatically matches that same fixed height, instead of stretching to whatever the calendar happened to need that month.

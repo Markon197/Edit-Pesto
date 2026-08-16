@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Masthead from "@/components/Masthead";
+import { fetchJson } from "@/lib/fetchJson";
 
 type CountRow = { action: string; count: number };
 type RecentRow = { action: string; detail: string | null; created_at: string };
@@ -23,10 +24,8 @@ export default function StatsPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/stats")
-      .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
-      .then(({ ok, data }) => {
-        if (!ok) throw new Error(data?.error || "Could not load stats.");
+    fetchJson("/api/stats")
+      .then((data) => {
         setCounts(data.counts);
         setRecent(data.recent);
       })
