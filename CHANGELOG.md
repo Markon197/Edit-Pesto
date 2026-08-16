@@ -2,6 +2,10 @@
 
 Every shipped change bumps `APP_VERSION` in [lib/version.ts](lib/version.ts) (shown in the masthead) and gets a line here, so it's obvious at a glance whether the live site reflects the latest request.
 
+## Version 13 — 2026-08-16
+- **Fixed the week view's "next" arrow** getting stuck instead of advancing (previous worked fine). Root cause: the new week-nav date math parsed dates in local time but read them back out in UTC, which silently shifts the date by a day for anyone in a positive UTC offset (the UK, whenever BST is in effect) — and since the week snaps to Monday on every click, that error compounded and could make forward clicks loop in place. Fixed by keeping the whole calculation in UTC throughout, the same approach already used for .ics export.
+- **New: Import events.** A button next to "+ Add event" opens a paste box — drop in raw text, a press release, an AI-generated list, a copied schedule, whatever you've got — and it reads through it and proposes a list of events (title, date, time if given, a guessed tag, description) that you review and add one by one, exactly like a scan's results. No web search involved, so it's fast and immune to the scan timeout issue.
+
 ## Version 12 — 2026-08-16
 - **Week view**: a Month/Week toggle next to the calendar's month name. Week view is a day-by-day agenda for the selected week — every event fully readable (title, time, tag, description), not squeezed into a lane bar, so a busy day is actually easy to read. Navigate week-to-week with the same ‹ › arrows.
 - **Event times**: events can now optionally carry a start time, not just a date — a new "Time" field on the Add/Edit forms. Shows wherever a date shows (Upcoming, See all, week view, the event popup) as e.g. "16 Aug, 9am". Scans (industry events, earnings) will pick up a time too if one turned up naturally in the search, without spending extra searches chasing it down. Exporting a timed, single-day event to .ics now sets the actual time instead of marking it all-day.

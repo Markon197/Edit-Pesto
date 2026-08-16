@@ -12,6 +12,7 @@ const ACTION_LABELS: Record<string, string> = {
   scan_events: "Calendar — insurance events scanned",
   scan_earnings: "Calendar — earnings calendar scanned",
   scan_holidays: "Calendar — UK bank holidays scanned",
+  import_events: "Calendar — events imported from pasted text",
 };
 
 function labelFor(action: string): string {

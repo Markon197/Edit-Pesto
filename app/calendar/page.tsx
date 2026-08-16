@@ -15,9 +15,13 @@ type ScanCandidate = {
   location: string | null;
   description: string;
   link: string | null;
+  // Only set by "import" — the other scans use a fixed tag for the whole
+  // batch (SCAN_CONFIG[kind].tag) since each one only ever produces one
+  // kind of event, but imported text can be a mix.
+  tag?: EventTag;
 };
 
-type ScanKind = "event" | "earnings" | "holiday";
+type ScanKind = "event" | "earnings" | "holiday" | "import";
 
 type ScanState = {
   loading: boolean;
@@ -47,6 +51,14 @@ const SCAN_CONFIG: Record<ScanKind, { url: string; tag: EventTag; buttonLabel: s
     tag: "holiday",
     buttonLabel: "📅 Add UK bank holidays",
     loadingLabel: "Fetching UK bank holidays…",
+  },
+  import: {
+    url: "/api/import",
+    // Unused fallback — import candidates carry their own tag, guessed
+    // per item, since pasted text can mix event types.
+    tag: "event",
+    buttonLabel: "📋 Import events",
+    loadingLabel: "Reading through what you pasted…",
   },
 };
 
@@ -142,15 +154,23 @@ function buildWeeks(year: number, month: number): Week[] {
 // ---- Week view: a simple day-by-day agenda (not an hour-grid) so every
 // event on a busy day is readable at a glance, times and all, rather than
 // squeezed into a fixed-height lane bar.
+//
+// Deliberately all-UTC, not local time: parsing "T00:00:00" (local) and then
+// reading it back via toISOString() (UTC) silently shifts the date by a day
+// for anyone in a positive UTC offset — UK included, whenever BST is in
+// effect. mondayOf() re-snaps to Monday on every call using that same drift,
+// so the error compounded click over click and could make "next week" loop
+// in place instead of advancing. Staying in UTC start-to-finish sidesteps
+// it entirely — same fix already used in lib/ics.ts's dayAfter().
 function addDays(iso: string, delta: number): string {
-  const d = new Date(iso + "T00:00:00");
-  d.setDate(d.getDate() + delta);
+  const d = new Date(iso + "T00:00:00Z");
+  d.setUTCDate(d.getUTCDate() + delta);
   return d.toISOString().slice(0, 10);
 }
 
 function mondayOf(iso: string): string {
-  const d = new Date(iso + "T00:00:00");
-  const offset = (d.getDay() + 6) % 7; // Monday-start
+  const d = new Date(iso + "T00:00:00Z");
+  const offset = (d.getUTCDay() + 6) % 7; // Monday-start
   return addDays(iso, -offset);
 }
 
@@ -267,6 +287,7 @@ export default function CalendarPage() {
     event: EMPTY_SCAN,
     earnings: EMPTY_SCAN,
     holiday: EMPTY_SCAN,
+    import: EMPTY_SCAN,
   });
   const [activeScanPanel, setActiveScanPanel] = useState<ScanKind | null>(null);
   const [scanPanelCollapsed, setScanPanelCollapsed] = useState(false);
@@ -274,12 +295,16 @@ export default function CalendarPage() {
     event: null,
     earnings: null,
     holiday: null,
+    import: null,
   });
   const [scanMenuOpen, setScanMenuOpen] = useState(false);
   const [customizeKind, setCustomizeKind] = useState<"event" | "earnings" | null>(null);
   const [customizeText, setCustomizeText] = useState("");
-  const anyScanLoading = scans.event.loading || scans.earnings.loading || scans.holiday.loading;
-  const loadingScanKind = (["event", "earnings", "holiday"] as ScanKind[]).find((k) => scans[k].loading) ?? null;
+  const [showImportForm, setShowImportForm] = useState(false);
+  const [importText, setImportText] = useState("");
+  const ALL_SCAN_KINDS = ["event", "earnings", "holiday", "import"] as ScanKind[];
+  const anyScanLoading = ALL_SCAN_KINDS.some((k) => scans[k].loading);
+  const loadingScanKind = ALL_SCAN_KINDS.find((k) => scans[k].loading) ?? null;
 
   async function loadEvents() {
     setLoadingEvents(true);
@@ -505,6 +530,42 @@ export default function CalendarPage() {
     }
   }
 
+  // Separate from runScan because it posts pasted text, not a focus string,
+  // and has no web_search step to worry about — but shares the same
+  // scans/activeScanPanel state so results land in the same panel UI.
+  async function runImport(text: string) {
+    const kind: ScanKind = "import";
+    const controller = new AbortController();
+    abortRefs.current[kind] = controller;
+    setScans((s) => ({ ...s, [kind]: { ...EMPTY_SCAN, loading: true } }));
+    setActiveScanPanel(kind);
+    setScanPanelCollapsed(false);
+    try {
+      const data = await fetchJson(SCAN_CONFIG[kind].url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+        signal: controller.signal,
+      });
+      setScans((s) => ({
+        ...s,
+        [kind]: { loading: false, candidates: data.candidates as ScanCandidate[], addedKeys: new Set(), error: null },
+      }));
+    } catch (e) {
+      if (e instanceof DOMException && e.name === "AbortError") {
+        setScans((s) => ({ ...s, [kind]: EMPTY_SCAN }));
+        setActiveScanPanel(null);
+        return;
+      }
+      setScans((s) => ({
+        ...s,
+        [kind]: { ...EMPTY_SCAN, error: e instanceof Error ? e.message : "Could not process that text." },
+      }));
+    } finally {
+      abortRefs.current[kind] = null;
+    }
+  }
+
   function stopScan(kind: ScanKind) {
     abortRefs.current[kind]?.abort();
   }
@@ -517,7 +578,7 @@ export default function CalendarPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: candidate.title,
-          tag: SCAN_CONFIG[kind].tag,
+          tag: candidate.tag ?? SCAN_CONFIG[kind].tag,
           startDate: candidate.startDate,
           endDate: candidate.endDate || undefined,
           time: candidate.time || undefined,
@@ -546,6 +607,16 @@ export default function CalendarPage() {
         <div className="action-row">
           <button className="action btn-ghost" onClick={openAddForm}>
             + Add event
+          </button>
+          <button
+            className="action btn-ghost"
+            onClick={() => {
+              setImportText("");
+              setShowImportForm(true);
+            }}
+            disabled={anyScanLoading}
+          >
+            📋 Import events
           </button>
           <div className="scan-menu-wrap">
             {anyScanLoading ? (
@@ -653,6 +724,11 @@ export default function CalendarPage() {
                         return (
                           <div className="scan-result" key={key}>
                             <div className="info">
+                              {c.tag && (
+                                <span className={`tag-pill ${c.tag}`} style={{ marginTop: 0, marginRight: 4 }}>
+                                  {TAG_LABELS[c.tag]}
+                                </span>
+                              )}
                               <strong>{c.title}</strong>{" "}
                               <span className="d">
                                 — {formatDateRange(c.startDate, c.endDate)}
@@ -1052,6 +1128,56 @@ export default function CalendarPage() {
                 }}
               >
                 Run scan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showImportForm && (
+        <div
+          className="modal-overlay"
+          onClick={(e) => e.target === e.currentTarget && setShowImportForm(false)}
+        >
+          <div className="modal modal-wide">
+            <h3>Import events</h3>
+            <p style={{ fontSize: ".88rem", color: "var(--ink-soft)", marginTop: 0 }}>
+              Paste raw text — a press release, an AI-generated list, a copied schedule, rough notes — and it'll be
+              read through and turned into proposed events you can review and add one by one, just like a scan's
+              results.
+            </p>
+            <textarea
+              value={importText}
+              onChange={(e) => setImportText(e.target.value)}
+              placeholder="Paste text here…"
+              maxLength={12000}
+              style={{
+                width: "100%",
+                minHeight: 220,
+                fontFamily: "inherit",
+                fontSize: ".9rem",
+                padding: "8px 10px",
+                border: "1px solid var(--line)",
+                borderRadius: 3,
+                background: "var(--paper)",
+                color: "var(--ink)",
+                resize: "vertical",
+              }}
+            />
+            <div className="modal-actions">
+              <button className="action btn-ghost" onClick={() => setShowImportForm(false)}>
+                Cancel
+              </button>
+              <button
+                className="action btn-primary"
+                disabled={!importText.trim()}
+                onClick={() => {
+                  const text = importText;
+                  setShowImportForm(false);
+                  runImport(text);
+                }}
+              >
+                Read &amp; propose events
               </button>
             </div>
           </div>
