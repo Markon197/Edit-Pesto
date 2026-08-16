@@ -2,6 +2,15 @@
 
 Every shipped change bumps `APP_VERSION` in [lib/version.ts](lib/version.ts) (shown in the masthead) and gets a line here, so it's obvious at a glance whether the live site reflects the latest request.
 
+## Version 4 — 2026-08-05
+- New **Calendar** tab, next to Edit, sharing one masthead/nav.
+- Month view + upcoming list, backed by a real shared database (Vercel Postgres via Neon) — every event anyone adds or approves is visible to everyone.
+- **Add event** with a tag (Industry event / Earnings / Editorial).
+- **Scan insurance events** — web-search-grounded Claude call, finds 5+ upcoming industry events, skips anything already on the calendar, "+" to approve each one.
+- **Scan earnings calendar** — same mechanism, scoped to insurers reporting in the next two weeks only (clearly labeled), skips duplicates.
+- Click any event (grid or list) for a short detail popup with a delete button.
+- **Needs setup before this works**: provision the database (see README) and add its connection env vars in Vercel.
+
 ## Version 3 — 2026-08-05
 - Dark mode shows a small italic "Nut Free" label next to the logo (pesto usually has pine nuts) — a dark-mode-only easter egg.
 - Stronger contrast on the accepted-edit (green/bold) highlight color in both themes, so it reads more clearly against normal body text.
