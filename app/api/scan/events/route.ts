@@ -1,6 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
-import { ensureSchema, sql } from "@/lib/db";
+import { ensureSchema, friendlyDbError, sql } from "@/lib/db";
 import { isLikelyDuplicate } from "@/lib/events";
 import { WEB_SEARCH_TOOL, SUBMIT_EVENTS_TOOL, buildEventsScanPrompt } from "@/lib/calendarPrompts";
 
@@ -17,11 +17,19 @@ export async function POST() {
     );
   }
 
+  // DB step is isolated so a database problem reports as a database
+  // problem, not a generic "the scan failed" that hides the real cause.
+  let existingTitles: string[];
   try {
     await ensureSchema();
     const { rows } = await sql`SELECT title FROM events WHERE tag = 'event';`;
-    const existingTitles: string[] = rows.map((r: any) => r.title);
+    existingTitles = rows.map((r: any) => r.title);
+  } catch (err) {
+    console.error("GET existing events failed (scan/events)", err);
+    return NextResponse.json({ error: friendlyDbError(err) }, { status: 500 });
+  }
 
+  try {
     const todayISO = new Date().toISOString().slice(0, 10);
 
     const message = await anthropic.messages.create({
@@ -63,6 +71,9 @@ export async function POST() {
     return NextResponse.json({ candidates });
   } catch (err) {
     console.error("POST /api/scan/events failed", err);
-    return NextResponse.json({ error: "The scan failed. Try again in a moment." }, { status: 500 });
+    return NextResponse.json(
+      { error: "The web search step failed. Try again in a moment — if it keeps happening, tell Claude the exact error from the Vercel function logs." },
+      { status: 500 }
+    );
   }
 }

@@ -33,4 +33,18 @@ export function ensureSchema(): Promise<void> {
   return schemaReady;
 }
 
+// One clear, actionable message for any DB failure, shown directly in the
+// UI — so "it's broken" turns into "here's the exact next step" without
+// needing to go dig through the README.
+const SETUP_STEPS =
+  "In Vercel: open this project → the Storage tab → Create Database → choose Postgres. Then redeploy (Deployments tab → ⋯ → Redeploy).";
+
+export function friendlyDbError(err: unknown): string {
+  const msg = err instanceof Error ? err.message : String(err);
+  if (/missing|connection string|POSTGRES_URL|ECONNREFUSED|getaddrinfo|authenticat/i.test(msg)) {
+    return `The shared calendar's database isn't connected yet. ${SETUP_STEPS}`;
+  }
+  return `Could not reach the calendar database. ${SETUP_STEPS} If it's already set up, try redeploying once more.`;
+}
+
 export { sql };

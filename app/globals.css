@@ -75,10 +75,16 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-.masthead {
+/* Full-bleed colored bars, with their actual content capped at the same
+   width as the tabs and main content below so nothing looks mismatched. */
+.masthead-bar {
   background: var(--panel);
+}
+.masthead {
+  max-width: 1600px;
+  margin: 0 auto;
   color: var(--ink);
-  padding: 20px 32px 14px;
+  padding: 22px 32px 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -162,13 +168,6 @@ body {
   padding: 2px 7px;
   align-self: center;
 }
-.masthead .tag {
-  color: var(--ink-soft);
-  font-size: 0.92rem;
-  font-style: italic;
-  border-left: 1px solid var(--line);
-  padding-left: 16px;
-}
 .theme-toggle {
   background: transparent;
   border: 1px solid var(--ink-soft);
@@ -181,26 +180,28 @@ body {
   background: var(--navy-tint);
 }
 
+.tabs-bar {
+  background: var(--panel);
+  border-bottom: 3px double var(--ink);
+}
 .tabs {
   display: flex;
-  gap: 4px;
+  gap: 8px;
   padding: 0 32px;
-  border-bottom: 3px double var(--ink);
-  max-width: 1360px;
+  max-width: 1600px;
   margin: 0 auto;
-  background: var(--panel);
 }
 .tab {
   font-family: Georgia, "Times New Roman", serif;
-  font-size: 0.92rem;
+  font-size: 1.15rem;
   font-weight: 700;
   color: var(--ink-soft);
   background: transparent;
   border: none;
   text-decoration: none;
-  padding: 10px 18px 12px;
+  padding: 15px 28px 17px;
   cursor: pointer;
-  border-bottom: 3px solid transparent;
+  border-bottom: 4px solid transparent;
   margin-bottom: -3px;
   display: inline-block;
 }
@@ -213,7 +214,7 @@ body {
 }
 
 main {
-  max-width: 1360px;
+  max-width: 1600px;
   margin: 0 auto;
   padding: 24px 32px 56px;
 }

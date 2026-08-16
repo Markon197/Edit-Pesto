@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { ensureSchema, sql } from "@/lib/db";
+import { ensureSchema, friendlyDbError, sql } from "@/lib/db";
 import { isEventTag, type CalendarEvent } from "@/lib/events";
 
 export const runtime = "nodejs";
@@ -34,10 +34,7 @@ export async function GET() {
     return NextResponse.json({ events: rows.map(rowToEvent) });
   } catch (err) {
     console.error("GET /api/events failed", err);
-    return NextResponse.json(
-      { error: "Could not load the calendar. Check the database is connected (see README)." },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: friendlyDbError(err) }, { status: 500 });
   }
 }
 
@@ -71,6 +68,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ event: rowToEvent(rows[0]) }, { status: 201 });
   } catch (err) {
     console.error("POST /api/events failed", err);
-    return NextResponse.json({ error: "Could not save the event. Try again." }, { status: 500 });
+    return NextResponse.json({ error: friendlyDbError(err) }, { status: 500 });
   }
 }

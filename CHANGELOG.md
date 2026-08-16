@@ -2,6 +2,12 @@
 
 Every shipped change bumps `APP_VERSION` in [lib/version.ts](lib/version.ts) (shown in the masthead) and gets a line here, so it's obvious at a glance whether the live site reflects the latest request.
 
+## Version 5 — 2026-08-05
+- Fixed the masthead/tabs/content width mismatch — all three now line up at the same (wider) 1600px column, with full-width colored bars behind the masthead and tabs.
+- Made the Edit/Calendar tabs noticeably bigger and easier to spot.
+- Much clearer error messages when the Calendar tab's database isn't connected yet — spells out the exact Vercel steps right in the banner instead of a generic "check the README."
+- Scan failures now distinguish a database problem from a search problem, so the error you see actually points at what broke.
+
 ## Version 4 — 2026-08-05
 - New **Calendar** tab, next to Edit, sharing one masthead/nav.
 - Month view + upcoming list, backed by a real shared database (Vercel Postgres via Neon) — every event anyone adds or approves is visible to everyone.
