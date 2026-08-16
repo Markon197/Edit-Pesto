@@ -11,6 +11,7 @@ type ScanCandidate = {
   title: string;
   startDate: string;
   endDate: string | null;
+  time: string | null;
   location: string | null;
   description: string;
   link: string | null;
@@ -76,6 +77,16 @@ function formatShort(dateStr: string): string {
   return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 }
 
+// "14:00" -> "2pm", "09:30" -> "9:30am" — compact editorial style rather
+// than a full HH:MM:SS clock face.
+function formatTime(time: string): string {
+  const [hStr, mStr] = time.split(":");
+  const h = parseInt(hStr, 10);
+  const period = h >= 12 ? "pm" : "am";
+  const h12 = h % 12 || 12;
+  return mStr === "00" ? `${h12}${period}` : `${h12}:${mStr}${period}`;
+}
+
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
@@ -88,6 +99,7 @@ const EMPTY_ADD_FORM = {
   tag: "event" as EventTag,
   startDate: todayISO(),
   endDate: "",
+  time: "",
   description: "",
   link: "",
 };
@@ -125,6 +137,34 @@ function buildWeeks(year: number, month: number): Week[] {
     weeks.push({ cells: new Array(7).fill(null) });
   }
   return weeks;
+}
+
+// ---- Week view: a simple day-by-day agenda (not an hour-grid) so every
+// event on a busy day is readable at a glance, times and all, rather than
+// squeezed into a fixed-height lane bar.
+function addDays(iso: string, delta: number): string {
+  const d = new Date(iso + "T00:00:00");
+  d.setDate(d.getDate() + delta);
+  return d.toISOString().slice(0, 10);
+}
+
+function mondayOf(iso: string): string {
+  const d = new Date(iso + "T00:00:00");
+  const offset = (d.getDay() + 6) % 7; // Monday-start
+  return addDays(iso, -offset);
+}
+
+function weekDatesFrom(mondayIso: string): string[] {
+  return Array.from({ length: 7 }, (_, i) => addDays(mondayIso, i));
+}
+
+function formatWeekRange(startIso: string, endIso: string): string {
+  const start = new Date(startIso + "T00:00:00");
+  const end = new Date(endIso + "T00:00:00");
+  const sameMonth = start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear();
+  const startLabel = start.toLocaleDateString("en-GB", { day: "numeric", month: sameMonth ? undefined : "short" });
+  const endLabel = end.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  return `${startLabel} – ${endLabel}`;
 }
 
 type Bar = { event: CalendarEvent; startCol: number; endCol: number; lane: number };
@@ -208,6 +248,9 @@ export default function CalendarPage() {
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth()); // 0-indexed
 
+  const [viewMode, setViewMode] = useState<"month" | "week">("month");
+  const [weekAnchor, setWeekAnchor] = useState(todayISO()); // any date within the shown week
+
   const [modalEvent, setModalEvent] = useState<CalendarEvent | null>(null);
   const [showAllEvents, setShowAllEvents] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -269,8 +312,45 @@ export default function CalendarPage() {
     setViewYear(y);
   }
 
+  function goToWeek(delta: number) {
+    setWeekAnchor((cur) => addDays(mondayOf(cur), delta * 7));
+  }
+
+  function switchToWeek() {
+    // Land on the current week if we're looking at the current month;
+    // otherwise the first week of whatever month is on screen.
+    const isCurrentMonth = viewYear === today.getFullYear() && viewMonth === today.getMonth();
+    setWeekAnchor(isCurrentMonth ? todayISO() : isoFor(viewYear, viewMonth, 1));
+    setViewMode("week");
+  }
+
+  function switchToMonth() {
+    const d = new Date(weekStart + "T00:00:00");
+    setViewYear(d.getFullYear());
+    setViewMonth(d.getMonth());
+    setViewMode("month");
+  }
+
   const weeks = useMemo(() => buildWeeks(viewYear, viewMonth), [viewYear, viewMonth]);
   const weekLayouts = useMemo(() => weeks.map((w) => layoutWeek(w, events)), [weeks, events]);
+
+  const weekStart = useMemo(() => mondayOf(weekAnchor), [weekAnchor]);
+  const weekDates = useMemo(() => weekDatesFrom(weekStart), [weekStart]);
+  const weekAgenda = useMemo(
+    () =>
+      weekDates.map((iso) => ({
+        iso,
+        events: events
+          .filter((ev) => ev.startDate <= iso && (ev.endDate || ev.startDate) >= iso)
+          .sort((a, b) => {
+            if (!a.time && !b.time) return a.title.localeCompare(b.title);
+            if (!a.time) return -1;
+            if (!b.time) return 1;
+            return a.time.localeCompare(b.time) || a.title.localeCompare(b.title);
+          }),
+      })),
+    [weekDates, events]
+  );
 
   const upcoming = useMemo(() => {
     const t = todayISO();
@@ -307,6 +387,7 @@ export default function CalendarPage() {
           tag: addForm.tag,
           startDate: addForm.startDate,
           endDate: addForm.endDate || undefined,
+          time: addForm.time || undefined,
           description: addForm.description.trim(),
           link: addForm.link.trim() || undefined,
           source: "manual",
@@ -343,6 +424,7 @@ export default function CalendarPage() {
       tag: modalEvent.tag,
       startDate: modalEvent.startDate,
       endDate: modalEvent.endDate || "",
+      time: modalEvent.time || "",
       description: modalEvent.description,
       link: modalEvent.link || "",
     });
@@ -368,6 +450,7 @@ export default function CalendarPage() {
           tag: editForm.tag,
           startDate: editForm.startDate,
           endDate: editForm.endDate || undefined,
+          time: editForm.time || undefined,
           description: editForm.description.trim(),
           link: editForm.link.trim() || undefined,
         }),
@@ -437,6 +520,7 @@ export default function CalendarPage() {
           tag: SCAN_CONFIG[kind].tag,
           startDate: candidate.startDate,
           endDate: candidate.endDate || undefined,
+          time: candidate.time || undefined,
           description: candidate.description,
           link: candidate.link || undefined,
           source: "ai-scan",
@@ -572,6 +656,7 @@ export default function CalendarPage() {
                               <strong>{c.title}</strong>{" "}
                               <span className="d">
                                 — {formatDateRange(c.startDate, c.endDate)}
+                                {c.time ? `, ${formatTime(c.time)}` : ""}
                                 {c.location ? `, ${c.location}` : ""}
                               </span>
                               {c.description && <div className="desc">{c.description}</div>}
@@ -597,64 +682,117 @@ export default function CalendarPage() {
 
         <section className="cal-workspace">
           <div className="pane" ref={calPaneRef}>
-            <div className="pane-head">
+            <div className="pane-head cal-pane-head">
               <h2>
-                {MONTH_NAMES[viewMonth]} {viewYear}
+                {viewMode === "month"
+                  ? `${MONTH_NAMES[viewMonth]} ${viewYear}`
+                  : formatWeekRange(weekStart, weekDates[6])}
               </h2>
-              <div className="month-nav">
-                <button onClick={() => goToMonth(-1)} aria-label="Previous month">
-                  ‹
-                </button>
-                shared calendar
-                <button onClick={() => goToMonth(1)} aria-label="Next month">
-                  ›
-                </button>
+              <div className="cal-head-controls">
+                <div className="view-toggle">
+                  <button className={viewMode === "month" ? "active" : ""} onClick={switchToMonth}>
+                    Month
+                  </button>
+                  <button className={viewMode === "week" ? "active" : ""} onClick={switchToWeek}>
+                    Week
+                  </button>
+                </div>
+                <div className="month-nav">
+                  <button
+                    onClick={() => (viewMode === "month" ? goToMonth(-1) : goToWeek(-1))}
+                    aria-label={viewMode === "month" ? "Previous month" : "Previous week"}
+                  >
+                    ‹
+                  </button>
+                  shared calendar
+                  <button
+                    onClick={() => (viewMode === "month" ? goToMonth(1) : goToWeek(1))}
+                    aria-label={viewMode === "month" ? "Next month" : "Next week"}
+                  >
+                    ›
+                  </button>
+                </div>
               </div>
             </div>
-            <div className="cal-grid">
-              <div className="cal-weekdays">
-                {WEEKDAY_LABELS.map((d) => (
-                  <div key={d}>{d}</div>
-                ))}
+            {viewMode === "month" ? (
+              <div className="cal-grid">
+                <div className="cal-weekdays">
+                  {WEEKDAY_LABELS.map((d) => (
+                    <div key={d}>{d}</div>
+                  ))}
+                </div>
+                {weeks.map((week, wi) => {
+                  const { bars, overflowCount } = weekLayouts[wi];
+                  return (
+                    <div key={wi} className="cal-week">
+                      {week.cells.map((c, ci) => (
+                        <div
+                          key={ci}
+                          className={`cal-daynum${c ? "" : " empty"}${c && c.iso === todayIsoStr ? " today" : ""}`}
+                          style={{ gridColumn: ci + 1, gridRow: "1 / -1" }}
+                        >
+                          {c ? c.day : ""}
+                        </div>
+                      ))}
+                      {bars.map((b) => (
+                        <div
+                          key={b.event.id}
+                          className={`cal-bar ${b.event.tag}`}
+                          style={{ gridColumn: `${b.startCol + 1} / ${b.endCol + 2}`, gridRow: b.lane + 2 }}
+                          title={b.event.time ? `${formatTime(b.event.time)} — ${b.event.title}` : b.event.title}
+                          onClick={() => setModalEvent(b.event)}
+                        >
+                          {b.event.title}
+                        </div>
+                      ))}
+                      {overflowCount > 0 && (
+                        <div
+                          className="cal-bar-overflow"
+                          style={{ gridColumn: "1 / 8", gridRow: MAX_LANES_PER_WEEK + 2 }}
+                          onClick={() => setShowAllEvents(true)}
+                          title="See all events"
+                        >
+                          +{overflowCount} more this week
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-              {weeks.map((week, wi) => {
-                const { bars, overflowCount } = weekLayouts[wi];
-                return (
-                  <div key={wi} className="cal-week">
-                    {week.cells.map((c, ci) => (
-                      <div
-                        key={ci}
-                        className={`cal-daynum${c ? "" : " empty"}${c && c.iso === todayIsoStr ? " today" : ""}`}
-                        style={{ gridColumn: ci + 1, gridRow: "1 / -1" }}
-                      >
-                        {c ? c.day : ""}
+            ) : (
+              <div className="cal-grid week-agenda">
+                {weekAgenda.map(({ iso, events: dayEvents }) => {
+                  const d = new Date(iso + "T00:00:00");
+                  const isToday = iso === todayIsoStr;
+                  return (
+                    <div className={`week-day${isToday ? " today" : ""}`} key={iso}>
+                      <div className="week-day-head">
+                        <span className="week-day-name">{d.toLocaleDateString("en-GB", { weekday: "long" })}</span>
+                        <span className="week-day-date">
+                          {d.getDate()} {MONTH_NAMES[d.getMonth()]}
+                        </span>
                       </div>
-                    ))}
-                    {bars.map((b) => (
-                      <div
-                        key={b.event.id}
-                        className={`cal-bar ${b.event.tag}`}
-                        style={{ gridColumn: `${b.startCol + 1} / ${b.endCol + 2}`, gridRow: b.lane + 2 }}
-                        title={b.event.title}
-                        onClick={() => setModalEvent(b.event)}
-                      >
-                        {b.event.title}
-                      </div>
-                    ))}
-                    {overflowCount > 0 && (
-                      <div
-                        className="cal-bar-overflow"
-                        style={{ gridColumn: "1 / 8", gridRow: MAX_LANES_PER_WEEK + 2 }}
-                        onClick={() => setShowAllEvents(true)}
-                        title="See all events"
-                      >
-                        +{overflowCount} more this week
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+                      {dayEvents.length === 0 ? (
+                        <p className="empty-hint">Nothing this day</p>
+                      ) : (
+                        <ul className="event-list week-day-list">
+                          {dayEvents.map((ev) => (
+                            <li className="event-card" key={ev.id} onClick={() => setModalEvent(ev)}>
+                              <div className="row1">
+                                <span className="title">{ev.title}</span>
+                                {ev.time && <span className="date">{formatTime(ev.time)}</span>}
+                              </div>
+                              <span className={`tag-pill ${ev.tag}`}>{TAG_LABELS[ev.tag]}</span>
+                              {ev.description && <div className="desc">{ev.description}</div>}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
             <div className="cal-legend">
               <span>
                 <span className="dot event" /> Industry event
@@ -695,7 +833,10 @@ export default function CalendarPage() {
                 <li className="event-card" key={ev.id} onClick={() => setModalEvent(ev)}>
                   <div className="row1">
                     <span className="title">{ev.title}</span>
-                    <span className="date">{formatShort(ev.startDate)}</span>
+                    <span className="date">
+                      {formatShort(ev.startDate)}
+                      {ev.time ? `, ${formatTime(ev.time)}` : ""}
+                    </span>
                   </div>
                   <span className={`tag-pill ${ev.tag}`}>{TAG_LABELS[ev.tag]}</span>
                   {ev.description && <div className="desc">{ev.description}</div>}
@@ -722,7 +863,10 @@ export default function CalendarPage() {
                 >
                   <div className="row1">
                     <span className="title">{ev.title}</span>
-                    <span className="date">{formatShort(ev.startDate)}</span>
+                    <span className="date">
+                      {formatShort(ev.startDate)}
+                      {ev.time ? `, ${formatTime(ev.time)}` : ""}
+                    </span>
                   </div>
                   <span className={`tag-pill ${ev.tag}`}>{TAG_LABELS[ev.tag]}</span>
                   {ev.description && <div className="desc">{ev.description}</div>}
@@ -787,6 +931,14 @@ export default function CalendarPage() {
                       />
                     </label>
                   </div>
+                  <label className="label-narrow">
+                    Time (optional)
+                    <input
+                      type="time"
+                      value={editForm.time}
+                      onChange={(e) => setEditForm((f) => ({ ...f, time: e.target.value }))}
+                    />
+                  </label>
                   <label>
                     Description
                     <textarea
@@ -821,7 +973,10 @@ export default function CalendarPage() {
             ) : (
               <>
                 <h3>{modalEvent.title}</h3>
-                <div className="date">{formatDateRange(modalEvent.startDate, modalEvent.endDate)}</div>
+                <div className="date">
+                  {formatDateRange(modalEvent.startDate, modalEvent.endDate)}
+                  {modalEvent.time ? ` · ${formatTime(modalEvent.time)}` : ""}
+                </div>
                 <span className={`tag-pill ${modalEvent.tag}`} style={{ marginBottom: 10 }}>
                   {TAG_LABELS[modalEvent.tag]}
                 </span>
@@ -953,6 +1108,14 @@ export default function CalendarPage() {
                   />
                 </label>
               </div>
+              <label className="label-narrow">
+                Time (optional)
+                <input
+                  type="time"
+                  value={addForm.time}
+                  onChange={(e) => setAddForm((f) => ({ ...f, time: e.target.value }))}
+                />
+              </label>
               <label>
                 Description (a sentence or two)
                 <textarea

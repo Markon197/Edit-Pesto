@@ -710,6 +710,44 @@ button.action:disabled {
   }
 }
 
+.cal-pane-head {
+  flex-wrap: wrap;
+  row-gap: 8px;
+}
+.cal-head-controls {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.view-toggle {
+  display: flex;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.view-toggle button {
+  background: var(--panel);
+  color: var(--ink-soft);
+  border: none;
+  padding: 4px 12px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+.view-toggle button + button {
+  border-left: 1px solid var(--line);
+}
+.view-toggle button.active {
+  background: var(--navy);
+  color: var(--panel);
+  font-weight: 700;
+}
+.view-toggle button:not(.active):hover {
+  background: var(--navy-tint);
+}
+
 .month-nav {
   display: flex;
   align-items: center;
@@ -735,6 +773,50 @@ button.action:disabled {
 
 .cal-grid {
   padding: 16px 18px 20px;
+}
+
+/* Week view: a day-by-day agenda rather than an hour grid — every event
+   on a busy day stays fully readable (title, time, tag, description)
+   instead of being squeezed into a fixed-height lane bar. */
+.week-agenda {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.week-day {
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.week-day-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 8px 12px;
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+}
+.week-day.today .week-day-head {
+  background: var(--today-tint);
+}
+.week-day-name {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--ink);
+}
+.week-day-date {
+  font-style: italic;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+.week-day-list {
+  max-height: 260px;
+  padding: 10px 12px;
+}
+.week-day .empty-hint {
+  padding: 10px 12px;
+  margin: 0;
+  font-size: 0.85rem;
 }
 .cal-weekdays {
   display: grid;
@@ -1147,4 +1229,7 @@ button.action:disabled {
 }
 .event-form .form-row > label {
   flex: 1;
+}
+.event-form .label-narrow {
+  max-width: 160px;
 }

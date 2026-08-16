@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest, NextResponse } from "next/server";
 import { ensureSchema, friendlyDbError, logActivity, sql } from "@/lib/db";
-import { isLikelyDuplicate } from "@/lib/events";
+import { isLikelyDuplicate, isValidTime } from "@/lib/events";
 import { webSearchTool, SUBMIT_EARNINGS_TOOL, buildEarningsScanPrompt } from "@/lib/calendarPrompts";
 
 export const runtime = "nodejs";
@@ -72,6 +72,7 @@ export async function POST(req: NextRequest) {
         title: e.company,
         startDate: e.date,
         endDate: null,
+        time: isValidTime(e.time) ? e.time : null,
         location: null,
         description: typeof e.description === "string" ? e.description : "",
         link: typeof e.link === "string" ? e.link : null,

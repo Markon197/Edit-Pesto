@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ensureSchema, friendlyDbError, sql } from "@/lib/db";
-import { isEventTag, rowToEvent } from "@/lib/events";
+import { isEventTag, isValidTime, rowToEvent } from "@/lib/events";
 
 export const runtime = "nodejs";
 
@@ -13,7 +13,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     }
 
     const body = await req.json().catch(() => ({}));
-    const { title, tag, startDate, endDate, description, link } = body ?? {};
+    const { title, tag, startDate, endDate, time, description, link } = body ?? {};
 
     if (typeof title !== "string" || !title.trim()) {
       return NextResponse.json({ error: "An event needs a title." }, { status: 400 });
@@ -25,6 +25,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       return NextResponse.json({ error: "An event needs a valid start date." }, { status: 400 });
     }
     const cleanEndDate = typeof endDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(endDate) ? endDate : null;
+    const cleanTime = isValidTime(time) ? time : null;
     const cleanLink = typeof link === "string" && link.trim() ? link.trim() : null;
 
     const { rows } = await sql`
@@ -33,6 +34,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
           tag = ${tag},
           start_date = ${startDate},
           end_date = ${cleanEndDate},
+          event_time = ${cleanTime},
           description = ${typeof description === "string" ? description.trim() : ""},
           link = ${cleanLink}
       WHERE id = ${id}

@@ -7,6 +7,7 @@ type IcsEventInput = {
   title: string;
   startDate: string; // YYYY-MM-DD
   endDate: string | null; // YYYY-MM-DD, inclusive (our convention)
+  time: string | null; // HH:MM, 24-hour, optional
   description: string;
   link: string | null;
 };
@@ -32,7 +33,6 @@ function nowStamp(): string {
 }
 
 export function eventToIcs(ev: IcsEventInput): string {
-  const dtEndExclusive = dayAfter(ev.endDate || ev.startDate);
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
@@ -41,10 +41,25 @@ export function eventToIcs(ev: IcsEventInput): string {
     "BEGIN:VEVENT",
     `UID:${ev.id}@pestobot.insuranceerm`,
     `DTSTAMP:${nowStamp()}`,
-    `DTSTART;VALUE=DATE:${toIcsDate(ev.startDate)}`,
-    `DTEND;VALUE=DATE:${toIcsDate(dtEndExclusive)}`,
-    `SUMMARY:${escapeIcsText(ev.title)}`,
   ];
+  // A specific time only makes sense for a single-day event — a multi-day
+  // event with a "time" would mean something different (e.g. a start time
+  // on day one) that we don't model, so it falls back to all-day export.
+  const isSingleDay = !ev.endDate || ev.endDate === ev.startDate;
+  if (ev.time && isSingleDay) {
+    const [h, m] = ev.time.split(":");
+    // No DTEND: a valid, zero-duration VEVENT — calendar apps render this
+    // as a point-in-time marker at the given time rather than an all-day
+    // block, which is what we actually know (a start time, not a duration).
+    lines.push(`DTSTART:${toIcsDate(ev.startDate)}T${h}${m}00`);
+  } else {
+    const dtEndExclusive = dayAfter(ev.endDate || ev.startDate);
+    lines.push(
+      `DTSTART;VALUE=DATE:${toIcsDate(ev.startDate)}`,
+      `DTEND;VALUE=DATE:${toIcsDate(dtEndExclusive)}`
+    );
+  }
+  lines.push(`SUMMARY:${escapeIcsText(ev.title)}`);
   if (ev.description) lines.push(`DESCRIPTION:${escapeIcsText(ev.description)}`);
   if (ev.link) lines.push(`URL:${ev.link}`);
   lines.push("END:VEVENT", "END:VCALENDAR");

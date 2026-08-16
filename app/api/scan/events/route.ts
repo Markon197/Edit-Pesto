@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest, NextResponse } from "next/server";
 import { ensureSchema, friendlyDbError, logActivity, sql } from "@/lib/db";
-import { isLikelyDuplicate } from "@/lib/events";
+import { isLikelyDuplicate, isValidTime } from "@/lib/events";
 import { webSearchTool, SUBMIT_EVENTS_TOOL, buildEventsScanPrompt } from "@/lib/calendarPrompts";
 
 export const runtime = "nodejs";
@@ -71,6 +71,7 @@ export async function POST(req: NextRequest) {
         title: e.title,
         startDate: e.startDate,
         endDate: typeof e.endDate === "string" ? e.endDate : null,
+        time: isValidTime(e.time) ? e.time : null,
         location: typeof e.location === "string" ? e.location : null,
         description: typeof e.description === "string" ? e.description : "",
         link: typeof e.link === "string" ? e.link : null,

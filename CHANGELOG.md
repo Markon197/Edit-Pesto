@@ -2,6 +2,11 @@
 
 Every shipped change bumps `APP_VERSION` in [lib/version.ts](lib/version.ts) (shown in the masthead) and gets a line here, so it's obvious at a glance whether the live site reflects the latest request.
 
+## Version 12 — 2026-08-16
+- **Week view**: a Month/Week toggle next to the calendar's month name. Week view is a day-by-day agenda for the selected week — every event fully readable (title, time, tag, description), not squeezed into a lane bar, so a busy day is actually easy to read. Navigate week-to-week with the same ‹ › arrows.
+- **Event times**: events can now optionally carry a start time, not just a date — a new "Time" field on the Add/Edit forms. Shows wherever a date shows (Upcoming, See all, week view, the event popup) as e.g. "16 Aug, 9am". Scans (industry events, earnings) will pick up a time too if one turned up naturally in the search, without spending extra searches chasing it down. Exporting a timed, single-day event to .ics now sets the actual time instead of marking it all-day.
+- Existing events without a time are unaffected — the field is entirely optional throughout.
+
 ## Version 11 — 2026-08-16
 - **Scan timeouts**: scans were occasionally hitting Vercel's hard function time limit (504) after already spending the API call — the search budget per scan (6 for events, 5 for earnings) was too high for the 60-second ceiling. Cut to 4 and 3 respectively, and told the model explicitly to work quickly rather than double-checking things a broad search already covered. Should fail far less often; if it still happens occasionally, that's the absolute ceiling on Vercel's side, not something the app can retry around.
 - Calendar rows show 3 events per day now (was 2), with a bigger row height to fit.

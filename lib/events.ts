@@ -21,11 +21,16 @@ export type CalendarEvent = {
   tag: EventTag;
   startDate: string; // YYYY-MM-DD
   endDate: string | null; // YYYY-MM-DD, for multi-day events
+  time: string | null; // HH:MM, 24-hour, optional
   description: string;
   link: string | null;
   source: "manual" | "ai-scan";
   createdAt: string;
 };
+
+export function isValidTime(value: unknown): value is string {
+  return typeof value === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
+}
 
 // Postgres DATE columns come back as JS Date objects (midnight UTC) via
 // @vercel/postgres — format as YYYY-MM-DD without a timezone round-trip
@@ -42,6 +47,7 @@ export function rowToEvent(row: any): CalendarEvent {
     tag: row.tag,
     startDate: toDateString(row.start_date),
     endDate: row.end_date ? toDateString(row.end_date) : null,
+    time: row.event_time ?? null,
     description: row.description ?? "",
     link: row.link ?? null,
     source: row.source === "ai-scan" ? "ai-scan" : "manual",

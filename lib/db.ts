@@ -11,35 +11,39 @@ let schemaReady: Promise<void> | null = null;
 // instance so it only actually hits the DB once per cold start.
 export function ensureSchema(): Promise<void> {
   if (!schemaReady) {
-    schemaReady = Promise.all([
-      sql`
-        CREATE TABLE IF NOT EXISTS events (
-          id TEXT PRIMARY KEY,
-          title TEXT NOT NULL,
-          tag TEXT NOT NULL,
-          start_date DATE NOT NULL,
-          end_date DATE,
-          description TEXT NOT NULL DEFAULT '',
-          link TEXT,
-          source TEXT NOT NULL DEFAULT 'manual',
-          created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-        );
-      `,
-      sql`
-        CREATE TABLE IF NOT EXISTS activity_log (
-          id TEXT PRIMARY KEY,
-          action TEXT NOT NULL,
-          detail TEXT,
-          created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-        );
-      `,
-    ])
-      .then(() => undefined)
-      .catch((err) => {
-        // Let the next call retry rather than caching a failed connection.
-        schemaReady = null;
-        throw err;
-      });
+    schemaReady = (async () => {
+      await Promise.all([
+        sql`
+          CREATE TABLE IF NOT EXISTS events (
+            id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            tag TEXT NOT NULL,
+            start_date DATE NOT NULL,
+            end_date DATE,
+            description TEXT NOT NULL DEFAULT '',
+            link TEXT,
+            source TEXT NOT NULL DEFAULT 'manual',
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+          );
+        `,
+        sql`
+          CREATE TABLE IF NOT EXISTS activity_log (
+            id TEXT PRIMARY KEY,
+            action TEXT NOT NULL,
+            detail TEXT,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+          );
+        `,
+      ]);
+      // Migration for tables created before the optional event time field
+      // existed — CREATE TABLE IF NOT EXISTS above is a no-op on a table
+      // that's already there, so the new column has to be added separately.
+      await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS event_time TEXT;`;
+    })().catch((err) => {
+      // Let the next call retry rather than caching a failed connection.
+      schemaReady = null;
+      throw err;
+    });
   }
   return schemaReady;
 }

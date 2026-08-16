@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { ensureSchema, friendlyDbError, sql } from "@/lib/db";
-import { isEventTag, rowToEvent } from "@/lib/events";
+import { isEventTag, isValidTime, rowToEvent } from "@/lib/events";
 
 export const runtime = "nodejs";
 
@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
   try {
     await ensureSchema();
     const body = await req.json();
-    const { title, tag, startDate, endDate, description, link, source } = body ?? {};
+    const { title, tag, startDate, endDate, time, description, link, source } = body ?? {};
 
     if (typeof title !== "string" || !title.trim()) {
       return NextResponse.json({ error: "An event needs a title." }, { status: 400 });
@@ -32,13 +32,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "An event needs a valid start date." }, { status: 400 });
     }
     const cleanEndDate = typeof endDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(endDate) ? endDate : null;
+    const cleanTime = isValidTime(time) ? time : null;
     const cleanLink = typeof link === "string" && link.trim() ? link.trim() : null;
     const cleanSource = source === "ai-scan" ? "ai-scan" : "manual";
     const id = randomUUID();
 
     const { rows } = await sql`
-      INSERT INTO events (id, title, tag, start_date, end_date, description, link, source)
-      VALUES (${id}, ${title.trim()}, ${tag}, ${startDate}, ${cleanEndDate}, ${
+      INSERT INTO events (id, title, tag, start_date, end_date, event_time, description, link, source)
+      VALUES (${id}, ${title.trim()}, ${tag}, ${startDate}, ${cleanEndDate}, ${cleanTime}, ${
       typeof description === "string" ? description.trim() : ""
     }, ${cleanLink}, ${cleanSource})
       RETURNING *;

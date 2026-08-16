@@ -35,6 +35,10 @@ export const SUBMIT_EVENTS_TOOL = {
               type: "string",
               description: "YYYY-MM-DD, only if the event spans multiple days; omit otherwise",
             },
+            time: {
+              type: "string",
+              description: "HH:MM in 24-hour time, only if a specific start time was found; omit otherwise",
+            },
             location: { type: "string" },
             description: { type: "string", description: "One factual sentence." },
             link: { type: "string", description: "The event's official page, if found." },
@@ -60,6 +64,10 @@ export const SUBMIT_EARNINGS_TOOL = {
           properties: {
             company: { type: "string" },
             date: { type: "string", description: "YYYY-MM-DD" },
+            time: {
+              type: "string",
+              description: "HH:MM in 24-hour time, only if a specific report time was found (e.g. before market open); omit otherwise",
+            },
             description: {
               type: "string",
               description: "E.g. 'H1 2026 results' or 'Q3 2026 results'.",
@@ -88,7 +96,7 @@ You have a limited number of searches (about 4) — spend them on broad queries 
 
 Do not include any of the following — they are already on the calendar: ${exclude}
 
-For each event, give an exact start date (and end date if it spans multiple days) in YYYY-MM-DD, a one-sentence factual description, and a link to the event's official page if you found one. Only include events you found real, current evidence for — do not guess a date.${focusLine(focus)}
+For each event, give an exact start date (and end date if it spans multiple days) in YYYY-MM-DD, a one-sentence factual description, and a link to the event's official page if you found one. Include a start time (HH:MM, 24-hour) only if one turned up naturally in what you already found — don't spend an extra search chasing it down. Only include events you found real, current evidence for — do not guess a date.${focusLine(focus)}
 
 Submit your findings only via the submit_events tool, no other commentary.`;
 }
@@ -108,7 +116,7 @@ You have a limited number of searches (about 3) — do NOT search for each compa
 
 Do not include any of the following — they are already on the calendar: ${exclude}
 
-For each, give the company name, the exact reporting date in YYYY-MM-DD, a short description (e.g. "H1 2026 results" or "Q3 2026 results" — the results themselves, not the analyst call, since the call is same-day), and a link to their investor relations page if found. Only include companies you found real, current evidence for. If nothing qualifies in this window, submit an empty list rather than including anything outside it.${focusLine(focus)}
+For each, give the company name, the exact reporting date in YYYY-MM-DD, a short description (e.g. "H1 2026 results" or "Q3 2026 results" — the results themselves, not the analyst call, since the call is same-day), and a link to their investor relations page if found. Include a report time (HH:MM, 24-hour) only if one turned up naturally in what you already found — don't spend an extra search chasing it down. Only include companies you found real, current evidence for. If nothing qualifies in this window, submit an empty list rather than including anything outside it.${focusLine(focus)}
 
 Submit your findings only via the submit_earnings tool, no other commentary.`;
 }
