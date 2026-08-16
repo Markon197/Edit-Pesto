@@ -28,7 +28,10 @@ export async function POST() {
       model: "claude-sonnet-5",
       max_tokens: 4096,
       system: "You are a careful research assistant. Only report facts you found real, current evidence for via search — never invent a date.",
-      tools: [WEB_SEARCH_TOOL as Anthropic.Tool, SUBMIT_EVENTS_TOOL as Anthropic.Tool],
+      // web_search is a server tool with a different shape than a custom
+      // function tool (no input_schema), so the SDK's Tool type doesn't
+      // cover it — type the array loosely rather than per-element.
+      tools: [WEB_SEARCH_TOOL, SUBMIT_EVENTS_TOOL] as unknown as Anthropic.Tool[],
       tool_choice: { type: "auto" },
       messages: [{ role: "user", content: buildEventsScanPrompt(todayISO, existingTitles) }],
     });
