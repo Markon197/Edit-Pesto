@@ -2,6 +2,9 @@
 
 Every shipped change bumps `APP_VERSION` in [lib/version.ts](lib/version.ts) (shown in the masthead) and gets a line here, so it's obvious at a glance whether the live site reflects the latest request.
 
+## Version 8 — 2026-08-16
+- **Cost fix**: the web_search tool had no cap on how many searches Claude could run per scan — the earnings prompt in particular listed a dozen companies by name, which likely pushed it to search each one individually (~20 searches per scan observed). Added `max_uses` (6 for events, 5 for earnings) and rewrote both prompts to explicitly ask for a few broad queries instead of one-per-item.
+
 ## Version 7 — 2026-08-05
 - **Fixed the scan buttons** — likely regression from Version 6's "cancel the upstream call on Stop" change (removed it; Stop still stops your own wait immediately, just doesn't guarantee cutting the server-side call short anymore). If scans still fail after this, the exact error text from Vercel's function logs is what I need to go further.
 - Calendar rows are noticeably roomier now (taller, more like an ordinary month calendar), while keeping the bar-based rendering.
