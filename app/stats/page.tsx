@@ -13,6 +13,12 @@ const ACTION_LABELS: Record<string, string> = {
   scan_earnings: "Calendar — earnings calendar scanned",
   scan_holidays: "Calendar — UK bank holidays scanned",
   import_events: "Calendar — events imported from pasted text",
+  add_event: "Calendar — event added",
+  edit_event: "Calendar — event edited",
+  delete_event: "Calendar — event deleted",
+  add_tag: "Calendar — tag added",
+  edit_tag: "Calendar — tag edited",
+  delete_tag: "Calendar — tag deleted",
 };
 
 function labelFor(action: string): string {
@@ -46,7 +52,7 @@ export default function StatsPage() {
 
         {error && <div className="error-banner">{error}</div>}
 
-        <section className="cal-workspace">
+        <section className="stats-workspace">
           <div className="pane">
             <div className="pane-head">
               <h2>Totals by action</h2>

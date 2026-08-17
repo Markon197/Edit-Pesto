@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ensureSchema, friendlyDbError, sql } from "@/lib/db";
+import { ensureSchema, friendlyDbError, logActivity, sql } from "@/lib/db";
 import { isEventTag, isValidTime, rowToEvent } from "@/lib/events";
 
 export const runtime = "nodejs";
@@ -44,6 +44,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     if (rows.length === 0) {
       return NextResponse.json({ error: "That event no longer exists." }, { status: 404 });
     }
+    await logActivity("edit_event", title.trim());
     return NextResponse.json({ event: rowToEvent(rows[0]) });
   } catch (err) {
     console.error("PUT /api/events/[id] failed", err);
@@ -58,7 +59,8 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     if (!id) {
       return NextResponse.json({ error: "Missing event id." }, { status: 400 });
     }
-    await sql`DELETE FROM events WHERE id = ${id};`;
+    const { rows } = await sql`DELETE FROM events WHERE id = ${id} RETURNING title;`;
+    await logActivity("delete_event", rows[0]?.title ?? undefined);
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("DELETE /api/events/[id] failed", err);

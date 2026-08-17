@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ensureSchema, friendlyDbError, sql } from "@/lib/db";
+import { ensureSchema, friendlyDbError, logActivity, sql } from "@/lib/db";
 import { isTagColor, rowToTag, slugify } from "@/lib/tags";
 
 export const runtime = "nodejs";
@@ -46,6 +46,7 @@ export async function POST(req: NextRequest) {
       VALUES (${id}, ${cleanLabel}, ${color}, ${!!highlight}, ${nextOrder})
       RETURNING *;
     `;
+    await logActivity("add_tag", cleanLabel);
     return NextResponse.json({ tag: rowToTag(rows[0]) }, { status: 201 });
   } catch (err) {
     console.error("POST /api/tags failed", err);

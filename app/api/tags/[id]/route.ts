@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ensureSchema, friendlyDbError, sql } from "@/lib/db";
+import { ensureSchema, friendlyDbError, logActivity, sql } from "@/lib/db";
 import { isTagColor, rowToTag } from "@/lib/tags";
 
 export const runtime = "nodejs";
@@ -34,6 +34,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     if (rows.length === 0) {
       return NextResponse.json({ error: "That tag no longer exists." }, { status: 404 });
     }
+    await logActivity("edit_tag", rowToTag(rows[0]).label);
     return NextResponse.json({ tag: rowToTag(rows[0]) });
   } catch (err) {
     console.error("PUT /api/tags/[id] failed", err);
@@ -52,7 +53,8 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     // keep their (now-orphaned) tag id and the UI falls back to a plain
     // grey label for it, rather than blocking deletion or silently
     // retagging events to something the user didn't choose.
-    await sql`DELETE FROM tags WHERE id = ${id};`;
+    const { rows } = await sql`DELETE FROM tags WHERE id = ${id} RETURNING label;`;
+    await logActivity("delete_tag", rows[0]?.label ?? undefined);
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("DELETE /api/tags/[id] failed", err);

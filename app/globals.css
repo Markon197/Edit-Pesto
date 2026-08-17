@@ -815,6 +815,20 @@ button.action:disabled {
   }
 }
 
+/* Stats page's two-pane layout (totals + recent activity) — kept separate
+   from .cal-workspace since that one's now conditionally single-column for
+   the Calendar tab and stats always wants its two panes side by side. */
+.stats-workspace {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+}
+@media (max-width: 920px) {
+  .stats-workspace {
+    grid-template-columns: 1fr;
+  }
+}
+
 .cal-pane-head {
   flex-wrap: wrap;
   row-gap: 8px;

@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { ensureSchema, friendlyDbError, sql } from "@/lib/db";
+import { ensureSchema, friendlyDbError, logActivity, sql } from "@/lib/db";
 import { isEventTag, isValidTime, rowToEvent } from "@/lib/events";
 
 export const runtime = "nodejs";
@@ -44,6 +44,9 @@ export async function POST(req: NextRequest) {
     }, ${cleanLink}, ${cleanSource})
       RETURNING *;
     `;
+    // Covers both the manual "+ Add event" form and accepting a scan/import
+    // candidate — both post here, just with a different `source`.
+    await logActivity("add_event", `${title.trim()} (${cleanSource})`);
     return NextResponse.json({ event: rowToEvent(rows[0]) }, { status: 201 });
   } catch (err) {
     console.error("POST /api/events failed", err);
