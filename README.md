@@ -1,9 +1,11 @@
 # PestoBot
 
-Two tools for InsuranceERM in one app, sharing a masthead and tab nav:
+Tools for InsuranceERM in one app, sharing a masthead and tab nav. The Calendar tab is a dropdown covering three destinations:
 
 - **Edit** — a final proofing pass on articles before they go to the CMS. Paste a finished, edited article in on the left; get it back on the right with only genuine typos, grammar, spacing and style-guide issues fixed and marked inline — links, bold and italics untouched. Plus five headline options and a copy-ready list of the companies and people mentioned.
 - **Calendar** — a shared team calendar with team-editable tags (add/rename/recolor/delete your own, on top of the six built in), a tag filter, month and week views, and three ways to add events: manually, pasting raw text/AI output for Claude to format (Import events), or AI web-search scans (industry events, earnings — currently disabled; UK bank holidays, pulled straight from gov.uk, stays on).
+- **Week Ahead** — an auto-generated view of the current Monday–Sunday's calendar events, editorially customizable (hide/reorder/rewrite a blurb per event without touching the calendar entry) and feeding a newsletter-signup list — not sending yet, just capturing who wants it.
+- **Earnings** — a hub of company earnings reports: paste a press release and Claude extracts a metrics table (revenue/GWP, net income, combined ratio, solvency ratio, etc., whatever the release actually gives), key takeaways, and links, which you review before saving. Stock performance and manually-added press coverage are built into the data model but not the UI yet — see the code comments for why.
 
 The style guide the Edit tab checks against lives in [`lib/styleGuide.ts`](lib/styleGuide.ts) — edit that file directly to change the rules.
 
@@ -23,6 +25,18 @@ The style guide the Edit tab checks against lives in [`lib/styleGuide.ts`](lib/s
 - `app/api/import/route.ts` — the Import events button. No web search — just asks Claude to extract and format events from text the user pastes in, tagging each one itself since a paste can mix event types.
 - `lib/calendarPrompts.ts` — the instructions given to the model for the two AI scans and the import feature.
 - `lib/db.ts` / `lib/events.ts` / `lib/tags.ts` / `lib/ics.ts` — the database client (incl. tag palette seeding), shared event types/row-mapping, the tag type/color palette/row-mapping, and the .ics file generator.
+
+**Week Ahead tab**
+- `app/week-ahead/page.tsx` — the UI: this week's events (via `/api/week-ahead`), inline hide/reorder/edit-blurb controls, and a newsletter signup form.
+- `app/api/week-ahead/route.ts` — computes the current Monday–Sunday window (`lib/weekDates.ts`, shared with the Calendar tab's week view) and returns events overlapping it, left-joined with any editorial override.
+- `app/api/week-ahead/notes/[eventId]/route.ts` — upserts one event's override (custom blurb / hidden / manual sort position).
+- `app/api/newsletter/route.ts` — signup capture only; no sending yet.
+
+**Earnings tab**
+- `app/earnings/page.tsx` — the list + Import flow: paste text, review/edit the AI's extraction, save.
+- `app/earnings/[id]/page.tsx` — one report's metrics table, key takeaways, official/call links, a stock-performance placeholder, and a press-coverage section (schema exists, manual-entry UI doesn't yet).
+- `app/api/earnings/route.ts` (list/save), `app/api/earnings/extract/route.ts` (AI extraction — returns a draft, saves nothing), `app/api/earnings/[id]/route.ts` (get/delete).
+- `lib/earningsPrompts.ts` — the extraction prompt and tool schema. `lib/earnings.ts` — types and row-mapping; metrics/takeaways are stored as JSONB, not fixed columns, since the metric set genuinely differs company to company.
 
 **Usage stats**
 - `/stats` — a hidden page (not linked anywhere in the app) showing how often each button has been used: Edit checks, and each of the scan/import types. Protected by the same site password as everything else — reach it by typing the URL directly.

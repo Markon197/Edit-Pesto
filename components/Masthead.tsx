@@ -6,9 +6,15 @@ import { useEffect, useState } from "react";
 import { VERSION_LABEL } from "@/lib/version";
 import { fetchJson } from "@/lib/fetchJson";
 
+const CALENDAR_GROUP_PATHS = ["/calendar", "/week-ahead", "/earnings"];
+
 export default function Masthead() {
   const pathname = usePathname();
   const [isDark, setIsDark] = useState(false);
+  const [calMenuOpen, setCalMenuOpen] = useState(false);
+  const calendarGroupActive = CALENDAR_GROUP_PATHS.some(
+    (p) => pathname === p || pathname.startsWith(`${p}/`)
+  );
 
   // Sync with whatever the blocking init script (layout.tsx) already set on
   // <html> before hydration, so there's no flash and no mismatch.
@@ -90,9 +96,32 @@ export default function Masthead() {
           <Link href="/" className={`tab${pathname === "/" ? " active" : ""}`}>
             Edit
           </Link>
-          <Link href="/calendar" className={`tab${pathname === "/calendar" ? " active" : ""}`}>
-            Calendar
-          </Link>
+          <div className="scan-menu-wrap">
+            <button
+              type="button"
+              className={`tab${calendarGroupActive ? " active" : ""}`}
+              onClick={() => setCalMenuOpen((o) => !o)}
+              aria-expanded={calMenuOpen}
+            >
+              Calendar ▾
+            </button>
+            {calMenuOpen && (
+              <>
+                <div className="scan-menu-backdrop" onClick={() => setCalMenuOpen(false)} />
+                <div className="scan-menu">
+                  <Link href="/calendar" onClick={() => setCalMenuOpen(false)}>
+                    📅 Calendar
+                  </Link>
+                  <Link href="/week-ahead" onClick={() => setCalMenuOpen(false)}>
+                    📰 Week Ahead
+                  </Link>
+                  <Link href="/earnings" onClick={() => setCalMenuOpen(false)}>
+                    📊 Earnings
+                  </Link>
+                </div>
+              </>
+            )}
+          </div>
         </nav>
       </div>
     </>

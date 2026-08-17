@@ -7,6 +7,7 @@ import { downloadIcs } from "@/lib/ics";
 import { fetchJson } from "@/lib/fetchJson";
 import { type CalendarEvent, type EventTag } from "@/lib/events";
 import { TAG_COLORS, type TagColor, type TagDef } from "@/lib/tags";
+import { addDays, mondayOf, todayISO, weekDatesFrom } from "@/lib/weekDates";
 
 type ScanCandidate = {
   title: string;
@@ -72,10 +73,6 @@ const SCAN_CONFIG: Record<ScanKind, { url: string; tag: EventTag; buttonLabel: s
 // Fallback for a tag id that no longer exists (deleted since the event was
 // tagged) — a plain grey pill rather than a crash or a blank label.
 const FALLBACK_TAG_COLOR: TagColor = "slate";
-
-function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
-}
 
 function pad(n: number): string {
   return String(n).padStart(2, "0");
@@ -166,31 +163,8 @@ function buildWeeks(year: number, month: number): Week[] {
 
 // ---- Week view: a simple day-by-day agenda (not an hour-grid) so every
 // event on a busy day is readable at a glance, times and all, rather than
-// squeezed into a fixed-height lane bar.
-//
-// Deliberately all-UTC, not local time: parsing "T00:00:00" (local) and then
-// reading it back via toISOString() (UTC) silently shifts the date by a day
-// for anyone in a positive UTC offset — UK included, whenever BST is in
-// effect. mondayOf() re-snaps to Monday on every call using that same drift,
-// so the error compounded click over click and could make "next week" loop
-// in place instead of advancing. Staying in UTC start-to-finish sidesteps
-// it entirely — same fix already used in lib/ics.ts's dayAfter().
-function addDays(iso: string, delta: number): string {
-  const d = new Date(iso + "T00:00:00Z");
-  d.setUTCDate(d.getUTCDate() + delta);
-  return d.toISOString().slice(0, 10);
-}
-
-function mondayOf(iso: string): string {
-  const d = new Date(iso + "T00:00:00Z");
-  const offset = (d.getUTCDay() + 6) % 7; // Monday-start
-  return addDays(iso, -offset);
-}
-
-function weekDatesFrom(mondayIso: string): string[] {
-  return Array.from({ length: 7 }, (_, i) => addDays(mondayIso, i));
-}
-
+// squeezed into a fixed-height lane bar. Date math (addDays/mondayOf/
+// weekDatesFrom) now lives in lib/weekDates.ts, shared with Week Ahead.
 function formatWeekRange(startIso: string, endIso: string): string {
   const start = new Date(startIso + "T00:00:00");
   const end = new Date(endIso + "T00:00:00");

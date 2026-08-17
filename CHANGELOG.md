@@ -2,6 +2,17 @@
 
 Every shipped change bumps `APP_VERSION` in [lib/version.ts](lib/version.ts) (shown in the masthead) and gets a line here, so it's obvious at a glance whether the live site reflects the latest request.
 
+## Version 21 — 2026-08-18
+Foundation for the two new sections pitched this session — a big change, phase one of two (the Earnings hub's stock-performance chart and manual press-coverage entry are still to come).
+
+- **Calendar nav is now a dropdown**: Calendar / Week Ahead / Earnings.
+- **New: Week Ahead.** Auto-pulled from the calendar for the current Monday–Sunday (resets every Monday since it's always computed live off today's date, not a stored snapshot). Hide, reorder, or write a shorter blurb for any event without touching the calendar entry itself. A newsletter signup form captures interest — sending isn't built yet, this just saves the list for when it is.
+- **New: Earnings hub.** A list of company earnings reports; an Import button pastes a press release or AI summary and Claude extracts a metrics table (prioritising gross written premium, net income, combined ratio for P&C insurers, solvency ratio, return on equity — whatever the release actually gives, nothing forced), 3-5 key takeaways, and official/earnings-call links, all reviewable and editable before saving. Stock performance and manual press-coverage entry are in the data model already but not built into the UI yet — see the "Stock data" research below.
+- Researched free stock-data APIs for the eventual stock-performance chart: Finnhub, Twelve Data, and Alpha Vantage all gate or throttle European exchange data too hard to be usable; Stooq.com is the practical option (free, no key, real LSE/Xetra/SIX coverage) but is an unofficial/undocumented endpoint — the plan is to fetch daily into our own database rather than live on every page view, so an outage there degrades gracefully instead of breaking the page.
+- New DB tables: `newsletter_subscribers`, `week_ahead_notes` (per-event override), `earnings_reports` (metrics/takeaways stored as JSONB — the metric set genuinely differs company to company), `press_coverage`.
+- `lib/weekDates.ts` extracted from the Calendar tab's week-view date math (UTC-consistent, same fix as Version 13) — now shared with Week Ahead instead of risking a second copy drifting out of sync.
+- All new actions (Week Ahead edits, newsletter signups, earnings extract/save/delete) are logged to `/stats` like everything else.
+
 ## Version 20 — 2026-08-17
 - **Chart hover now shows a full breakdown**: hovering a day (or an empty day — the hit area covers the whole column, not just the bar) shows a proper floating tooltip with the date, the total, and a per-action-type breakdown sorted by count, instead of just a plain "date: N uses" tooltip.
 - **Site visits are now logged**: a lightweight ping fires once per page load (Edit, Calendar, or Stats) from the shared masthead, logged as `site_visit` — shows up in "Totals by action," "Recent activity," and the usage chart like anything else. Worth knowing: it's a page-view count, not a unique-session count — there's no login/session system in this app beyond the one shared site password, so switching tabs counts as a new visit the same way opening the site fresh does.

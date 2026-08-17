@@ -45,7 +45,63 @@ export function ensureSchema(): Promise<void> {
             created_at TIMESTAMPTZ NOT NULL DEFAULT now()
           );
         `,
+        sql`
+          CREATE TABLE IF NOT EXISTS newsletter_subscribers (
+            id TEXT PRIMARY KEY,
+            email TEXT NOT NULL UNIQUE,
+            name TEXT,
+            subscribed_at TIMESTAMPTZ NOT NULL DEFAULT now()
+          );
+        `,
+        // metrics/takeaways are JSONB rather than their own tables — the
+        // metric set genuinely varies company to company (a life insurer
+        // has no combined ratio; a reinsurer reports differently to a
+        // retail insurer), and nothing here needs cross-report querying,
+        // just per-report display.
+        sql`
+          CREATE TABLE IF NOT EXISTS earnings_reports (
+            id TEXT PRIMARY KEY,
+            company TEXT NOT NULL,
+            period TEXT NOT NULL,
+            report_date DATE,
+            ticker TEXT,
+            source_text TEXT,
+            metrics JSONB NOT NULL DEFAULT '[]'::jsonb,
+            takeaways JSONB NOT NULL DEFAULT '[]'::jsonb,
+            official_link TEXT,
+            earnings_call_link TEXT,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+          );
+        `,
       ]);
+      // These two reference tables created just above (events / earnings_reports)
+      // — sequential, not folded into the Promise.all batch, because nothing
+      // guarantees a table exists before a concurrent CREATE TABLE naming it
+      // in a foreign key finishes. Both are themselves idempotent, so this
+      // still costs nothing on a warm run.
+      await sql`
+        CREATE TABLE IF NOT EXISTS week_ahead_notes (
+          event_id TEXT PRIMARY KEY REFERENCES events(id) ON DELETE CASCADE,
+          note TEXT,
+          hidden BOOLEAN NOT NULL DEFAULT FALSE,
+          sort_order INTEGER NOT NULL DEFAULT 0,
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        );
+      `;
+      // Deliberately separate from earnings_reports' AI-populated fields —
+      // press coverage is a manual, editorial-only addition, never touched
+      // by the import/AI flow.
+      await sql`
+        CREATE TABLE IF NOT EXISTS press_coverage (
+          id TEXT PRIMARY KEY,
+          earnings_report_id TEXT NOT NULL REFERENCES earnings_reports(id) ON DELETE CASCADE,
+          outlet TEXT NOT NULL,
+          headline TEXT NOT NULL,
+          description TEXT NOT NULL DEFAULT '',
+          link TEXT NOT NULL,
+          added_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        );
+      `;
       // Migration for tables created before the optional event time field
       // existed — CREATE TABLE IF NOT EXISTS above is a no-op on a table
       // that's already there, so the new column has to be added separately.

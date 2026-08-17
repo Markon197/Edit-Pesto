@@ -21,6 +21,11 @@ const ACTION_LABELS: Record<string, string> = {
   add_tag: "Calendar — tag added",
   edit_tag: "Calendar — tag edited",
   delete_tag: "Calendar — tag deleted",
+  week_ahead_edit: "Week Ahead — event customised",
+  newsletter_signup: "Week Ahead — newsletter signup",
+  extract_earnings_report: "Earnings — report extracted from pasted text",
+  add_earnings_report: "Earnings — report saved",
+  delete_earnings_report: "Earnings — report deleted",
 };
 
 function labelFor(action: string): string {

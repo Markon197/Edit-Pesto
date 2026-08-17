@@ -649,6 +649,17 @@ button:disabled {
   font-style: italic;
 }
 
+.week-ahead-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.week-ahead-actions .icon-btn {
+  padding: 4px 8px;
+  font-size: 0.74rem;
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     transition: none !important;
@@ -745,8 +756,14 @@ button:disabled {
   z-index: 5;
   overflow: hidden;
 }
-.scan-menu button {
+/* .scan-menu is a generic dropdown-panel style, not scan-specific — reused
+   as-is for the masthead's Calendar dropdown (Calendar / Week Ahead /
+   Earnings), which renders <a> links instead of <button>s. */
+.scan-menu button,
+.scan-menu a {
+  display: block;
   text-align: left;
+  text-decoration: none;
   background: transparent;
   border: none;
   border-radius: 0;
@@ -757,10 +774,12 @@ button:disabled {
   color: var(--ink);
   cursor: pointer;
 }
-.scan-menu button:hover {
+.scan-menu button:hover,
+.scan-menu a:hover {
   background: var(--navy-tint);
 }
-.scan-menu button + button {
+.scan-menu button + button,
+.scan-menu a + a {
   border-top: 1px solid var(--line);
 }
 .scan-menu button:disabled {
@@ -1542,6 +1561,89 @@ button.action:disabled {
 }
 .event-form .label-narrow {
   max-width: 160px;
+}
+
+/* ---------- Earnings report editor (metrics / takeaways) ---------- */
+.metric-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: -4px 0 8px;
+}
+.metric-editor-row {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr 1fr auto;
+  gap: 6px;
+  align-items: center;
+}
+.metric-editor-row-single {
+  grid-template-columns: 1fr auto;
+}
+.metric-editor-row input {
+  font-family: inherit;
+  font-size: 0.85rem;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--paper);
+  color: var(--ink);
+  min-width: 0;
+}
+.metric-editor-row .icon-btn {
+  padding: 5px 8px;
+  flex-shrink: 0;
+}
+
+/* ---------- Earnings report detail page ---------- */
+.metrics-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+.metrics-table th {
+  text-align: left;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line);
+}
+.metrics-table td {
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--line);
+  font-variant-numeric: tabular-nums;
+}
+.metrics-table td:first-child {
+  font-variant-numeric: normal;
+  font-weight: 700;
+}
+.metric-change {
+  font-weight: 700;
+}
+.metric-change.up {
+  color: var(--add-ink);
+}
+.metric-change.down {
+  color: var(--del-ink);
+}
+.takeaway-list {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.94rem;
+  line-height: 1.5;
+}
+.coming-soon-card {
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  padding: 16px;
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+  font-style: italic;
+  text-align: center;
 }
 
 /* ---------- Manage tags modal ---------- */
