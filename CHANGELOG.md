@@ -2,6 +2,9 @@
 
 Every shipped change bumps `APP_VERSION` in [lib/version.ts](lib/version.ts) (shown in the masthead) and gets a line here, so it's obvious at a glance whether the live site reflects the latest request.
 
+## Version 19 — 2026-08-17
+- **Usage-per-day chart on the stats page**: a small bar chart above the existing totals/recent-activity panes, one bar per day for the last 30 days, every logged action counting as one use (so 5 edit checks in a day shows as 5). Hover a bar for the exact date and count. Zero-filled so a quiet day shows as an empty gap in the bar row rather than just vanishing.
+
 ## Version 18 — 2026-08-17
 - **Stats now log every calendar action**, not just scans/import: adding, editing, and deleting an event, and adding, editing, and deleting a tag are all logged now, alongside the Edit tab's article checks (which were already logged). Since the whole site shares one password rather than individual logins, this was already "from all users" by construction — the gap was that several actions just weren't being recorded at all, not that they were being missed for some people and not others.
 - Fixed a layout bug this surfaced: the hidden `/stats` page was quietly reusing the calendar's `.cal-workspace` CSS class for its own unrelated two-column layout, which broke (fell back to one column) when that class became conditional in Version 16. Stats gets its own `.stats-workspace` class now.
