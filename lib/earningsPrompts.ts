@@ -11,6 +11,11 @@ export const SUBMIT_EARNINGS_REPORT_TOOL = {
     properties: {
       company: { type: "string", description: "The company name, e.g. 'Zurich Insurance Group'." },
       period: { type: "string", description: "The reporting period, e.g. 'H1 2026', 'Q3 2026', 'FY2025'." },
+      priorPeriod: {
+        type: "string",
+        description:
+          "The specific period the prior-year comparison figures actually refer to, e.g. 'H1 2025' if this report is 'H1 2026'. State it explicitly if the text does; otherwise it's normally the same period one year earlier — only omit if you genuinely can't tell.",
+      },
       reportDate: { type: "string", description: "YYYY-MM-DD, the date results were announced, only if stated." },
       ticker: { type: "string", description: "Stock ticker/exchange code, only if given or unambiguous." },
       metrics: {
@@ -21,12 +26,19 @@ export const SUBMIT_EARNINGS_REPORT_TOOL = {
           type: "object",
           properties: {
             label: { type: "string", description: "e.g. 'Net income', 'Combined ratio', 'Solvency II ratio'." },
-            current: { type: "string", description: "Current period's value, exactly as stated, unit included — e.g. '€1.2bn', '94.5%'." },
-            priorYear: { type: "string", description: "Prior-year comparison value — only if the text actually states one." },
+            current: {
+              type: "string",
+              description:
+                "Current period's value, exactly as stated, unit included — e.g. '$1.2bn', '94.5%'. Formatting rules: use a currency SYMBOL ($, €, £, ¥), never a 3-letter code (USD, EUR, GBP). Use a plain minus sign for a negative value (e.g. '-$40m'), never accounting parentheses like '($40m)'.",
+            },
+            priorYear: {
+              type: "string",
+              description: "Prior-year comparison value (for the priorPeriod above) — only if the text actually states one. Same formatting rules as current: symbol not code, minus sign not parentheses.",
+            },
             change: {
               type: "string",
               description:
-                "Change vs prior year — only if the text states it directly, or it's a plain computation from the two values given. Never estimate one that isn't there.",
+                "Change vs prior year — only if the text states it directly, or it's a plain computation from the two values given. Never estimate one that isn't there. Always a leading + or - sign, never parentheses for a decrease.",
             },
           },
           required: ["label", "current"],
@@ -48,12 +60,14 @@ export function buildEarningsReportPrompt(rawText: string): string {
   return `You are helping InsuranceERM's editorial team turn a press release or other source text into a structured earnings report.
 
 Read the text below and extract:
-- The company name and reporting period (e.g. "H1 2026", "Q3 2026", "FY2025").
+- The company name and reporting period (e.g. "H1 2026", "Q3 2026", "FY2025") — AND the specific period the prior-year comparisons refer to (e.g. "H1 2025"), so a reader knows exactly what's being compared to what, not just "this period vs last period."
 - The report/announcement date, only if stated.
 - The stock ticker, only if given or unambiguous from the company name.
-- Financial metrics — prioritise ones genuinely comparable across insurers where the text gives them: gross written premium, net income/profit, combined ratio (property & casualty insurers only — don't force one onto a life insurer that doesn't report it), solvency ratio, return on equity. Include any other metric the text itself emphasises too. For each: the current period's value exactly as stated (currency/unit included), the prior-year value only if the text actually states one, and the change only if the text states it directly or it's a plain computation from the two values given — never estimate or invent a comparison that isn't actually there.
+- Financial metrics — prioritise ones genuinely comparable across insurers where the text gives them: gross written premium, net income/profit, combined ratio (property & casualty insurers only — don't force one onto a life insurer that doesn't report it), solvency ratio, return on equity. Include any other metric the text itself emphasises too. For each: the current period's value exactly as stated, the prior-year value only if the text actually states one, and the change only if the text states it directly or it's a plain computation from the two values given — never estimate or invent a comparison that isn't actually there.
 - 3-5 short, factual key-takeaway bullet points — highlights an editor would lead with, not a restatement of every number already in the metrics table.
 - A link to the official release and to the earnings call, only if either is actually present in the text.
+
+Formatting, strictly: currency SYMBOLS ($, €, £, ¥), never 3-letter codes (USD, EUR, GBP). A plain minus sign for any negative or decreased value (e.g. "-$40m", "-2.1pts"), never accounting-style parentheses like "($40m)".
 
 Never invent a number, a date, or a comparison that isn't in the text. If a common metric genuinely isn't mentioned, leave it out rather than guessing at it.
 

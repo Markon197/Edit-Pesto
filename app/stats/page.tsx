@@ -26,6 +26,9 @@ const ACTION_LABELS: Record<string, string> = {
   extract_earnings_report: "Earnings — report extracted from pasted text",
   add_earnings_report: "Earnings — report saved",
   delete_earnings_report: "Earnings — report deleted",
+  extract_press_coverage: "Earnings — press coverage extracted from pasted text",
+  add_press_coverage: "Earnings — press coverage added",
+  delete_press_coverage: "Earnings — press coverage deleted",
 };
 
 function labelFor(action: string): string {

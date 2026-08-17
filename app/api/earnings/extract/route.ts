@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest, NextResponse } from "next/server";
 import { logActivity } from "@/lib/db";
+import { normalizeMetricValue } from "@/lib/earnings";
 import { SUBMIT_EARNINGS_REPORT_TOOL, buildEarningsReportPrompt } from "@/lib/earningsPrompts";
 
 export const runtime = "nodejs";
@@ -54,16 +55,20 @@ export async function POST(req: NextRequest) {
     const draft = {
       company: typeof input.company === "string" ? input.company : "",
       period: typeof input.period === "string" ? input.period : "",
+      priorPeriod: typeof input.priorPeriod === "string" ? input.priorPeriod : "",
       reportDate: typeof input.reportDate === "string" ? input.reportDate : "",
       ticker: typeof input.ticker === "string" ? input.ticker : "",
+      // normalizeMetricValue is a backstop, not the primary fix — the
+      // prompt already asks for symbols-not-codes and minus-not-parens,
+      // this just catches the cases where the model doesn't fully comply.
       metrics: Array.isArray(input.metrics)
         ? input.metrics
             .filter((m: any) => m && typeof m.label === "string" && typeof m.current === "string")
             .map((m: any) => ({
               label: m.label,
-              current: m.current,
-              priorYear: typeof m.priorYear === "string" ? m.priorYear : "",
-              change: typeof m.change === "string" ? m.change : "",
+              current: normalizeMetricValue(m.current),
+              priorYear: typeof m.priorYear === "string" ? normalizeMetricValue(m.priorYear) : "",
+              change: typeof m.change === "string" ? normalizeMetricValue(m.change) : "",
             }))
         : [],
       takeaways: Array.isArray(input.takeaways) ? input.takeaways.filter((t: any) => typeof t === "string") : [],

@@ -1595,31 +1595,85 @@ button.action:disabled {
 }
 
 /* ---------- Earnings report detail page ---------- */
-.metrics-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.92rem;
+
+/* Editorial-style header — bigger and more specific than the small-caps
+   .pane-head convention used everywhere else, since this is the one place
+   a company name is the actual headline of the page. */
+.earnings-header {
+  margin-bottom: 22px;
 }
-.metrics-table th {
-  text-align: left;
-  font-size: 0.7rem;
+.earnings-header-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.earnings-ticker {
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+  font-style: italic;
+}
+.earnings-company {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0 0 4px;
+  line-height: 1.15;
+  text-wrap: balance;
+}
+.earnings-dateline {
+  color: var(--ink-soft);
+  font-style: italic;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+/* Metric "stat cards" — replaced a plain table: each metric gets its own
+   card with the value large and the comparison spelled out against the
+   actual named prior period, not a generic "prior year" column header. */
+.metric-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 14px;
+}
+.metric-card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+.metric-card-label {
+  font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--ink-soft);
-  padding: 6px 10px;
-  border-bottom: 1px solid var(--line);
+  margin-bottom: 6px;
 }
-.metrics-table td {
-  padding: 9px 10px;
-  border-bottom: 1px solid var(--line);
+.metric-card-value {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.55rem;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.1;
   font-variant-numeric: tabular-nums;
 }
-.metrics-table td:first-child {
-  font-variant-numeric: normal;
-  font-weight: 700;
+.metric-card-compare {
+  margin-top: 9px;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
 }
 .metric-change {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
 }
 .metric-change.up {
   color: var(--add-ink);
@@ -1627,15 +1681,36 @@ button.action:disabled {
 .metric-change.down {
   color: var(--del-ink);
 }
+
+/* Key takeaways get real visual weight — a tinted card and noticeably
+   larger type, not just another small-print list on the page. */
+.takeaways-card {
+  background: var(--pesto-tint);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+}
 .takeaway-list {
   margin: 0;
-  padding-left: 20px;
+  padding: 0;
+  list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  font-size: 0.94rem;
-  line-height: 1.5;
+  gap: 10px;
+  font-size: 1.08rem;
+  line-height: 1.55;
 }
+.takeaway-list li {
+  padding-left: 22px;
+  position: relative;
+}
+.takeaway-list li::before {
+  content: "—";
+  position: absolute;
+  left: 0;
+  color: var(--pesto);
+  font-weight: 700;
+}
+
 .coming-soon-card {
   border: 1px dashed var(--line);
   border-radius: var(--radius);
@@ -1644,6 +1719,117 @@ button.action:disabled {
   font-size: 0.88rem;
   font-style: italic;
   text-align: center;
+}
+
+/* ---------- Earnings list page ---------- */
+.earnings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.earnings-card {
+  display: block;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.earnings-card:hover {
+  border-color: var(--navy);
+  box-shadow: var(--shadow);
+}
+.earnings-card-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+.earnings-card-company {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+.earnings-card-date {
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+  font-style: italic;
+  white-space: nowrap;
+}
+.earnings-card-meta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.earnings-card-metrics {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.earnings-card-metric-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-soft);
+  display: block;
+  margin-bottom: 2px;
+}
+.earnings-card-metric-value {
+  font-weight: 700;
+  font-size: 0.98rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.earnings-card-takeaways {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 0.9rem;
+  color: var(--ink);
+  line-height: 1.55;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* ---------- Press coverage ---------- */
+.press-coverage-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+.press-coverage-item {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  background: var(--paper);
+}
+.press-coverage-item .row1 {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+.press-coverage-item .title {
+  font-weight: 700;
+  font-size: 0.98rem;
+}
+.press-coverage-item .desc {
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  margin-top: 6px;
+  line-height: 1.4;
 }
 
 /* ---------- Manage tags modal ---------- */

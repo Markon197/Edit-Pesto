@@ -2,6 +2,15 @@
 
 Every shipped change bumps `APP_VERSION` in [lib/version.ts](lib/version.ts) (shown in the masthead) and gets a line here, so it's obvious at a glance whether the live site reflects the latest request.
 
+## Version 22 — 2026-08-18
+- **Formatting fixes**: negative values now use a plain minus sign, never accounting-style parentheses; currency shows as a symbol ($, €, £, ¥), never a 3-letter code (USD/EUR/GBP). Both enforced in the extraction prompt and backstopped by a normalizer on the way in, in case the model doesn't fully comply.
+- **Specific period comparisons**: reports now carry an explicit "prior period" (e.g. "H1 2025" for an "H1 2026" report), extracted from the text rather than a generic "prior year" label — every comparison names exactly what it's being measured against.
+- **Up/down arrows**: every metric's change now shows ↑ or ↓ (colored green/up, red/down) based on its sign. Worth knowing: this is purely directional, not a "good or bad for the company" judgement — for a metric like combined ratio where lower is better, a decrease still shows red/down. Flagging in case that's worth a smarter version later.
+- **Redesigned report page**: a proper editorial header (large company name, period pill, dateline) instead of a small-caps label; the metrics table replaced with a stat-card grid (label, big value, named-period comparison, change badge); key takeaways bigger and set in a tinted card instead of small print.
+- **Redesigned list page**: bigger cards with the period, prior-period, ticker, up to two headline metrics with their change badges, and up to two takeaways per report — much more to go on before clicking in.
+- **New: Press coverage**, done. Add a link manually (outlet/headline/description/link), or paste a dump of links/headlines/notes with "Import coverage" and Claude extracts a reviewable list — add or leave out each one, same accept/reject pattern as every other Import in this app. Deliberately never auto-saves anything itself.
+- New DB column `earnings_reports.prior_period`; all press-coverage actions logged to /stats.
+
 ## Version 21 — 2026-08-18
 Foundation for the two new sections pitched this session — a big change, phase one of two (the Earnings hub's stock-performance chart and manual press-coverage entry are still to come).
 

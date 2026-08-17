@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { ensureSchema, friendlyDbError, logActivity, sql } from "@/lib/db";
-import { rowToEarningsReport } from "@/lib/earnings";
+import { normalizeMetricValue, rowToEarningsReport } from "@/lib/earnings";
 
 export const runtime = "nodejs";
 
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
   try {
     await ensureSchema();
     const body = await req.json().catch(() => ({}));
-    const { company, period, reportDate, ticker, sourceText, metrics, takeaways, officialLink, earningsCallLink } =
+    const { company, period, priorPeriod, reportDate, ticker, sourceText, metrics, takeaways, officialLink, earningsCallLink } =
       body ?? {};
 
     if (typeof company !== "string" || !company.trim()) {
@@ -41,9 +41,9 @@ export async function POST(req: NextRequest) {
           .filter((m: any) => m && typeof m.label === "string" && m.label.trim() && typeof m.current === "string" && m.current.trim())
           .map((m: any) => ({
             label: m.label.trim(),
-            current: m.current.trim(),
-            priorYear: typeof m.priorYear === "string" && m.priorYear.trim() ? m.priorYear.trim() : undefined,
-            change: typeof m.change === "string" && m.change.trim() ? m.change.trim() : undefined,
+            current: normalizeMetricValue(m.current),
+            priorYear: typeof m.priorYear === "string" && m.priorYear.trim() ? normalizeMetricValue(m.priorYear) : undefined,
+            change: typeof m.change === "string" && m.change.trim() ? normalizeMetricValue(m.change) : undefined,
           }))
       : [];
     const cleanTakeaways = Array.isArray(takeaways)
@@ -56,9 +56,9 @@ export async function POST(req: NextRequest) {
     const id = randomUUID();
     const { rows } = await sql`
       INSERT INTO earnings_reports
-        (id, company, period, report_date, ticker, source_text, metrics, takeaways, official_link, earnings_call_link)
+        (id, company, period, prior_period, report_date, ticker, source_text, metrics, takeaways, official_link, earnings_call_link)
       VALUES (
-        ${id}, ${company.trim()}, ${period.trim()}, ${cleanReportDate}, ${cleanLink(ticker)},
+        ${id}, ${company.trim()}, ${period.trim()}, ${cleanLink(priorPeriod)}, ${cleanReportDate}, ${cleanLink(ticker)},
         ${cleanLink(sourceText)}, ${JSON.stringify(cleanMetrics)}::jsonb, ${JSON.stringify(cleanTakeaways)}::jsonb,
         ${cleanLink(officialLink)}, ${cleanLink(earningsCallLink)}
       )

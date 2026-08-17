@@ -63,6 +63,7 @@ export function ensureSchema(): Promise<void> {
             id TEXT PRIMARY KEY,
             company TEXT NOT NULL,
             period TEXT NOT NULL,
+            prior_period TEXT,
             report_date DATE,
             ticker TEXT,
             source_text TEXT,
@@ -102,10 +103,11 @@ export function ensureSchema(): Promise<void> {
           added_at TIMESTAMPTZ NOT NULL DEFAULT now()
         );
       `;
-      // Migration for tables created before the optional event time field
+      // Migrations for tables created before a since-added optional column
       // existed — CREATE TABLE IF NOT EXISTS above is a no-op on a table
-      // that's already there, so the new column has to be added separately.
+      // that's already there, so new columns have to be added separately.
       await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS event_time TEXT;`;
+      await sql`ALTER TABLE earnings_reports ADD COLUMN IF NOT EXISTS prior_period TEXT;`;
       // One-time seed: the six tags that used to be hardcoded, so an
       // existing deployment's events (already tagged "event", "earnings",
       // etc.) keep resolving to a real label and color after the upgrade.

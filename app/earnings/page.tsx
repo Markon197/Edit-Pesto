@@ -4,12 +4,14 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Masthead from "@/components/Masthead";
+import MetricChange from "@/components/MetricChange";
 import { fetchJson } from "@/lib/fetchJson";
 import type { EarningsMetric, EarningsReport } from "@/lib/earnings";
 
 type Draft = {
   company: string;
   period: string;
+  priorPeriod: string;
   reportDate: string;
   ticker: string;
   metrics: EarningsMetric[];
@@ -136,26 +138,57 @@ export default function EarningsPage() {
               {reports ? `${reports.length} report${reports.length === 1 ? "" : "s"}` : "Loading…"}
             </span>
           </div>
-          <ul className="event-list" style={{ maxHeight: "none" }}>
+          <div style={{ padding: "16px 18px" }}>
             {reports && reports.length === 0 && (
               <p className="empty-hint" style={{ padding: "0 4px" }}>
                 No earnings reports yet — paste a press release with Import to add the first one.
               </p>
             )}
-            {reports?.map((r) => (
-              <li className="event-card" key={r.id}>
-                <Link href={`/earnings/${r.id}`} style={{ textDecoration: "none", color: "inherit", display: "block" }}>
-                  <div className="row1">
-                    <span className="title">
-                      {r.company} — {r.period}
-                    </span>
-                    <span className="date">{r.reportDate ? formatShort(r.reportDate) : ""}</span>
-                  </div>
-                  {r.takeaways[0] && <div className="desc">{r.takeaways[0]}</div>}
-                </Link>
-              </li>
-            ))}
-          </ul>
+            <div className="earnings-list">
+              {reports?.map((r) => {
+                const headline = r.metrics.slice(0, 2);
+                return (
+                  <Link href={`/earnings/${r.id}`} className="earnings-card" key={r.id}>
+                    <div className="earnings-card-top">
+                      <span className="earnings-card-company">
+                        {r.company} — {r.period}
+                      </span>
+                      <span className="earnings-card-date">{r.reportDate ? formatShort(r.reportDate) : "No date given"}</span>
+                    </div>
+                    <div className="earnings-card-meta">
+                      {r.priorPeriod && (
+                        <span style={{ fontSize: ".8rem", color: "var(--ink-soft)", fontStyle: "italic" }}>
+                          vs {r.priorPeriod}
+                        </span>
+                      )}
+                      {r.ticker && (
+                        <span style={{ fontSize: ".8rem", color: "var(--ink-soft)" }}>{r.ticker}</span>
+                      )}
+                    </div>
+                    {headline.length > 0 && (
+                      <div className="earnings-card-metrics">
+                        {headline.map((m, i) => (
+                          <div key={i}>
+                            <span className="earnings-card-metric-label">{m.label}</span>
+                            <span className="earnings-card-metric-value">
+                              {m.current} {m.change && <MetricChange change={m.change} />}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {r.takeaways.length > 0 && (
+                      <ul className="earnings-card-takeaways">
+                        {r.takeaways.slice(0, 2).map((t, i) => (
+                          <li key={i}>{t}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </main>
 
@@ -233,19 +266,30 @@ export default function EarningsPage() {
                   />
                 </label>
                 <label>
+                  Prior period (for comparison)
+                  <input
+                    placeholder="H1 2025"
+                    value={draft.priorPeriod}
+                    onChange={(e) => setDraft((d) => d && { ...d, priorPeriod: e.target.value })}
+                  />
+                </label>
+                <label>
                   Ticker (optional)
                   <input value={draft.ticker} onChange={(e) => setDraft((d) => d && { ...d, ticker: e.target.value })} />
                 </label>
               </div>
 
               <label>Metrics</label>
+              <p style={{ fontSize: ".78rem", color: "var(--ink-soft)", margin: "-4px 0 4px" }}>
+                Use a currency symbol ($, €, £), not a code — and a minus sign for a decrease, not parentheses.
+              </p>
               <div className="metric-editor">
                 {draft.metrics.map((m, i) => (
                   <div className="metric-editor-row" key={i}>
                     <input placeholder="Label" value={m.label} onChange={(e) => updateMetric(i, { label: e.target.value })} />
                     <input placeholder="Current" value={m.current} onChange={(e) => updateMetric(i, { current: e.target.value })} />
                     <input
-                      placeholder="Prior year"
+                      placeholder="Prior period"
                       value={m.priorYear || ""}
                       onChange={(e) => updateMetric(i, { priorYear: e.target.value })}
                     />

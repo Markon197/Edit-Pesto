@@ -17,6 +17,7 @@ export type EarningsReport = {
   id: string;
   company: string;
   period: string; // e.g. "H1 2026"
+  priorPeriod: string | null; // e.g. "H1 2025" — what the prior-year figures actually compare to
   reportDate: string | null; // YYYY-MM-DD
   ticker: string | null;
   sourceText: string | null;
@@ -26,6 +27,24 @@ export type EarningsReport = {
   earningsCallLink: string | null;
   createdAt: string;
 };
+
+// Defensive backstop, not the primary fix — the extraction prompt already
+// asks for symbols-not-codes and minus-not-parentheses, but models don't
+// comply with formatting instructions with 100% consistency, and this is
+// cheap insurance against the one thing the user was explicit about.
+const CURRENCY_CODES: Record<string, string> = { USD: "$", EUR: "€", GBP: "£", JPY: "¥" };
+
+export function normalizeMetricValue(value: string): string {
+  let s = value.trim();
+  // Accounting-style negative parentheses -> a leading minus sign, e.g.
+  // "(5.2%)" -> "-5.2%", "(USD 40m)" -> "-USD 40m" (code swap happens next).
+  const paren = s.match(/^\(\s*(.+?)\s*\)$/);
+  if (paren) s = `-${paren[1]}`;
+  for (const [code, symbol] of Object.entries(CURRENCY_CODES)) {
+    s = s.replace(new RegExp(`\\b${code}\\s?`, "gi"), symbol);
+  }
+  return s.trim();
+}
 
 export type PressCoverageItem = {
   id: string;
@@ -60,6 +79,7 @@ export function rowToEarningsReport(row: any): EarningsReport {
     id: row.id,
     company: row.company,
     period: row.period,
+    priorPeriod: row.prior_period ?? null,
     reportDate: row.report_date ? toDateString(row.report_date) : null,
     ticker: row.ticker ?? null,
     sourceText: row.source_text ?? null,
