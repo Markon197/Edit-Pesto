@@ -1,14 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Masthead from "@/components/Masthead";
 import { fetchJson } from "@/lib/fetchJson";
 
 type CountRow = { action: string; count: number };
 type RecentRow = { action: string; detail: string | null; created_at: string };
-type DailyRow = { date: string; count: number };
+type DailyRow = { date: string; count: number; byAction: Record<string, number> };
 
 const ACTION_LABELS: Record<string, string> = {
+  site_visit: "Site visit",
   edit_check: "Edit tab — article checked",
   scan_events: "Calendar — insurance events scanned",
   scan_earnings: "Calendar — earnings calendar scanned",
@@ -31,6 +32,11 @@ function formatDay(iso: string): string {
   return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
 }
 
+function formatDayFull(iso: string): string {
+  const d = new Date(iso + "T00:00:00Z");
+  return d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+}
+
 // A bar with only its top corners rounded, square at the baseline — a
 // plain SVG <rect rx> would round all four corners, which reads wrong for
 // a bar growing up from an axis.
@@ -46,6 +52,9 @@ function barPath(x: number, y: number, w: number, h: number, r: number): string 
 // One series (every logged action counts as one "use," regardless of
 // type) plotted per day — so no legend (the pane title already says what
 // this is) and one fixed hue matching the rest of the app's navy accent.
+// Hovering anywhere in a day's column (not just the visible bar — days
+// with zero uses need a hit target too) shows a breakdown by action type
+// for that day, not just the total.
 function UsageChart({ data }: { data: DailyRow[] }) {
   const width = 900;
   const height = 170;
@@ -60,44 +69,94 @@ function UsageChart({ data }: { data: DailyRow[] }) {
   const barW = Math.min(22, slot * 0.7);
   const labelEvery = Math.max(1, Math.round(n / 6));
 
-  return (
-    <svg
-      viewBox={`0 0 ${width} ${height}`}
-      style={{ width: "100%", height: "auto", display: "block" }}
-      role="img"
-      aria-label={`Usage per day, last ${data.length} days, ${data.reduce((s, d) => s + d.count, 0)} uses total`}
-    >
-      {/* Recessive reference lines: baseline (0) and the max value, hairline and one step off the surface. */}
-      <line x1={padding.left} y1={baseline} x2={padding.left + plotW} y2={baseline} stroke="var(--line)" strokeWidth={1} />
-      <line x1={padding.left} y1={padding.top} x2={padding.left + plotW} y2={padding.top} stroke="var(--line)" strokeWidth={1} />
-      <text x={padding.left - 6} y={baseline} textAnchor="end" dominantBaseline="middle" fontSize={10} fill="var(--ink-soft)">
-        0
-      </text>
-      <text x={padding.left - 6} y={padding.top} textAnchor="end" dominantBaseline="middle" fontSize={10} fill="var(--ink-soft)">
-        {max}
-      </text>
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [hover, setHover] = useState<{ index: number; x: number; y: number } | null>(null);
 
-      {data.map((d, i) => {
-        const x = padding.left + i * slot + (slot - barW) / 2;
-        const h = d.count === 0 ? 0 : Math.max(2, (d.count / max) * plotH);
-        const y = baseline - h;
-        const showLabel = i === 0 || i === n - 1 || i % labelEvery === 0;
-        return (
-          <g key={d.date}>
-            {h > 0 && (
-              <path d={barPath(x, y, barW, h, 4)} fill="var(--navy)">
-                <title>{`${formatDay(d.date)}: ${d.count} use${d.count === 1 ? "" : "s"}`}</title>
-              </path>
-            )}
-            {showLabel && (
-              <text x={x + barW / 2} y={baseline + 14} textAnchor="middle" fontSize={9.5} fill="var(--ink-soft)">
-                {formatDay(d.date)}
-              </text>
-            )}
-          </g>
-        );
-      })}
-    </svg>
+  function handleMove(index: number, e: React.MouseEvent) {
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    setHover({ index, x: e.clientX - rect.left, y: e.clientY - rect.top });
+  }
+
+  const hovered = hover ? data[hover.index] : null;
+  const hoveredBreakdown = hovered
+    ? Object.entries(hovered.byAction).sort((a, b) => b[1] - a[1])
+    : [];
+
+  return (
+    <div ref={containerRef} style={{ position: "relative" }}>
+      <svg
+        viewBox={`0 0 ${width} ${height}`}
+        style={{ width: "100%", height: "auto", display: "block" }}
+        role="img"
+        aria-label={`Usage per day, last ${data.length} days, ${data.reduce((s, d) => s + d.count, 0)} uses total`}
+      >
+        {/* Recessive reference lines: baseline (0) and the max value, hairline and one step off the surface. */}
+        <line x1={padding.left} y1={baseline} x2={padding.left + plotW} y2={baseline} stroke="var(--line)" strokeWidth={1} />
+        <line x1={padding.left} y1={padding.top} x2={padding.left + plotW} y2={padding.top} stroke="var(--line)" strokeWidth={1} />
+        <text x={padding.left - 6} y={baseline} textAnchor="end" dominantBaseline="middle" fontSize={10} fill="var(--ink-soft)">
+          0
+        </text>
+        <text x={padding.left - 6} y={padding.top} textAnchor="end" dominantBaseline="middle" fontSize={10} fill="var(--ink-soft)">
+          {max}
+        </text>
+
+        {data.map((d, i) => {
+          const x = padding.left + i * slot + (slot - barW) / 2;
+          const h = d.count === 0 ? 0 : Math.max(2, (d.count / max) * plotH);
+          const y = baseline - h;
+          const showLabel = i === 0 || i === n - 1 || i % labelEvery === 0;
+          const isHovered = hover?.index === i;
+          return (
+            <g key={d.date}>
+              {h > 0 && (
+                <path d={barPath(x, y, barW, h, 4)} fill="var(--navy)" opacity={isHovered ? 1 : 0.92} />
+              )}
+              {showLabel && (
+                <text x={x + barW / 2} y={baseline + 14} textAnchor="middle" fontSize={9.5} fill="var(--ink-soft)">
+                  {formatDay(d.date)}
+                </text>
+              )}
+              {/* Hit target covers the whole day column, not just the bar — a
+                  zero-count day has no visible bar but should still be
+                  hoverable, and a slim bar is an easy miss otherwise. */}
+              <rect
+                x={padding.left + i * slot}
+                y={padding.top}
+                width={slot}
+                height={plotH}
+                fill="transparent"
+                onMouseEnter={(e) => handleMove(i, e)}
+                onMouseMove={(e) => handleMove(i, e)}
+                onMouseLeave={() => setHover(null)}
+                style={{ cursor: "pointer" }}
+              />
+            </g>
+          );
+        })}
+      </svg>
+
+      {hover && hovered && (
+        <div className="chart-tooltip" style={{ left: hover.x, top: hover.y }}>
+          <div className="chart-tooltip-date">{formatDayFull(hovered.date)}</div>
+          <div className="chart-tooltip-total">
+            {hovered.count} use{hovered.count === 1 ? "" : "s"} total
+          </div>
+          {hoveredBreakdown.length > 0 ? (
+            <ul>
+              {hoveredBreakdown.map(([action, count]) => (
+                <li key={action}>
+                  <span>{labelFor(action)}</span>
+                  <span>{count}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="chart-tooltip-empty">Nothing this day</p>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -134,7 +193,7 @@ export default function StatsPage() {
           <div className="pane-head">
             <h2>Usage per day</h2>
             <span style={{ fontSize: ".8rem", color: "var(--ink-soft)", fontStyle: "italic" }}>
-              every click counts as one use — last {daily?.length ?? 30} days
+              every click counts as one use — last {daily?.length ?? 30} days — hover a bar for the breakdown
             </span>
           </div>
           <div style={{ padding: "16px 18px" }}>

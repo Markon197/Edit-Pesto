@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { VERSION_LABEL } from "@/lib/version";
+import { fetchJson } from "@/lib/fetchJson";
 
 export default function Masthead() {
   const pathname = usePathname();
@@ -13,6 +14,19 @@ export default function Masthead() {
   // <html> before hydration, so there's no flash and no mismatch.
   useEffect(() => {
     setIsDark(document.documentElement.getAttribute("data-theme") === "dark");
+  }, []);
+
+  // One ping per page load, for the stats page's visit count. Masthead is
+  // rendered fresh by each page (not a persistent layout), so this fires
+  // once per navigation — including switching tabs — not once per browser
+  // session. Never lets a logging hiccup show up as a user-facing error.
+  useEffect(() => {
+    fetchJson("/api/visit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path: pathname }),
+    }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function toggleTheme() {

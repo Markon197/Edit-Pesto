@@ -829,6 +829,57 @@ button.action:disabled {
   }
 }
 
+/* Usage-per-day chart's hover tooltip — floats above the cursor, follows
+   the hit-rect for whichever day column is under it. */
+.chart-tooltip {
+  position: absolute;
+  pointer-events: none;
+  transform: translate(-50%, calc(-100% - 12px));
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  padding: 9px 12px;
+  font-size: 0.8rem;
+  min-width: 170px;
+  z-index: 5;
+}
+.chart-tooltip-date {
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 1px;
+}
+.chart-tooltip-total {
+  color: var(--ink-soft);
+  font-style: italic;
+  font-size: 0.76rem;
+  margin-bottom: 6px;
+}
+.chart-tooltip ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.chart-tooltip li {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  color: var(--ink);
+}
+.chart-tooltip li span:last-child {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+.chart-tooltip-empty {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+}
+
 .cal-pane-head {
   flex-wrap: wrap;
   row-gap: 8px;

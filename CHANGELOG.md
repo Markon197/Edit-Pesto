@@ -2,6 +2,10 @@
 
 Every shipped change bumps `APP_VERSION` in [lib/version.ts](lib/version.ts) (shown in the masthead) and gets a line here, so it's obvious at a glance whether the live site reflects the latest request.
 
+## Version 20 — 2026-08-17
+- **Chart hover now shows a full breakdown**: hovering a day (or an empty day — the hit area covers the whole column, not just the bar) shows a proper floating tooltip with the date, the total, and a per-action-type breakdown sorted by count, instead of just a plain "date: N uses" tooltip.
+- **Site visits are now logged**: a lightweight ping fires once per page load (Edit, Calendar, or Stats) from the shared masthead, logged as `site_visit` — shows up in "Totals by action," "Recent activity," and the usage chart like anything else. Worth knowing: it's a page-view count, not a unique-session count — there's no login/session system in this app beyond the one shared site password, so switching tabs counts as a new visit the same way opening the site fresh does.
+
 ## Version 19 — 2026-08-17
 - **Usage-per-day chart on the stats page**: a small bar chart above the existing totals/recent-activity panes, one bar per day for the last 30 days, every logged action counting as one use (so 5 edit checks in a day shows as 5). Hover a bar for the exact date and count. Zero-filled so a quiet day shows as an empty gap in the bar row rather than just vanishing.
 
