@@ -2,6 +2,10 @@
 
 Every shipped change bumps `APP_VERSION` in [lib/version.ts](lib/version.ts) (shown in the masthead) and gets a line here, so it's obvious at a glance whether the live site reflects the latest request.
 
+## Version 23 — 2026-08-18
+- **Metrics table is back** — the stat-card grid from Version 22 turned out busier and harder to scan than the table it replaced, so reverted, keeping only what actually helped: the two middle columns are now headed with the real period names ("H1 2026" / "H1 2025") instead of generic labels, and the change column still carries the ↑/↓ arrow and color.
+- **Fixed stale formatting on already-saved reports**: the "USD"/parentheses formatting fix in Version 22 only applied to newly-extracted or newly-saved data, so a report saved earlier kept showing "USD 3,489 million" and "(8.1pts)" even after the fix shipped. Normalization now also runs on every read, not just on the way in — no migration needed, existing reports just display correctly from now on.
+
 ## Version 22 — 2026-08-18
 - **Formatting fixes**: negative values now use a plain minus sign, never accounting-style parentheses; currency shows as a symbol ($, €, £, ¥), never a 3-letter code (USD/EUR/GBP). Both enforced in the extraction prompt and backstopped by a normalizer on the way in, in case the model doesn't fully comply.
 - **Specific period comparisons**: reports now carry an explicit "prior period" (e.g. "H1 2025" for an "H1 2026" report), extracted from the text rather than a generic "prior year" label — every comparison names exactly what it's being measured against.

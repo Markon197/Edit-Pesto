@@ -156,19 +156,27 @@ export default function EarningsReportPage() {
             <div className="pane" style={{ marginBottom: 20 }}>
               <div style={{ padding: "18px 20px" }}>
                 {report.metrics.length > 0 ? (
-                  <div className="metric-cards">
-                    {report.metrics.map((m, i) => (
-                      <div className="metric-card" key={i}>
-                        <div className="metric-card-label">{m.label}</div>
-                        <div className="metric-card-value">{m.current}</div>
-                        {(m.priorYear || m.change) && (
-                          <div className="metric-card-compare">
-                            {m.priorYear && <span>{report.priorPeriod || "Prior period"}: {m.priorYear}</span>}
-                            {m.change && <MetricChange change={m.change} />}
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                  <div className="metrics-table-wrap" style={{ overflowX: "auto" }}>
+                    <table className="metrics-table">
+                      <thead>
+                        <tr>
+                          <th>Metric</th>
+                          <th>{report.period}</th>
+                          <th>{report.priorPeriod || "Prior period"}</th>
+                          <th>Change</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {report.metrics.map((m, i) => (
+                          <tr key={i}>
+                            <td>{m.label}</td>
+                            <td className="metrics-table-current">{m.current}</td>
+                            <td>{m.priorYear || "—"}</td>
+                            <td>{m.change ? <MetricChange change={m.change} /> : "—"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 ) : (
                   <p className="empty-hint">No metrics recorded for this report.</p>

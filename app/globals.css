@@ -1630,42 +1630,59 @@ button.action:disabled {
   margin: 0;
 }
 
-/* Metric "stat cards" — replaced a plain table: each metric gets its own
-   card with the value large and the comparison spelled out against the
-   actual named prior period, not a generic "prior year" column header. */
-.metric-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-  gap: 14px;
-}
-.metric-card {
-  background: var(--paper);
+/* A table, not a card grid — the card version turned out busier and
+   harder to scan than the plain table it replaced. Column headers name
+   the actual periods being compared (not "prior year"), and the change
+   column carries the arrow/color. */
+.metrics-table-wrap {
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  padding: 14px 16px;
+  overflow: hidden;
 }
-.metric-card-label {
-  font-size: 0.72rem;
+.metrics-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+.metrics-table thead th {
+  background: var(--paper);
+  text-align: right;
+  font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--ink-soft);
-  margin-bottom: 6px;
+  font-weight: 700;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
 }
-.metric-card-value {
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 1.55rem;
+.metrics-table thead th:first-child {
+  text-align: left;
+}
+.metrics-table tbody td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.metrics-table tbody tr:last-child td {
+  border-bottom: none;
+}
+.metrics-table tbody tr:nth-child(even) {
+  background: var(--paper);
+}
+.metrics-table td:first-child {
+  font-variant-numeric: normal;
   font-weight: 700;
   color: var(--ink);
-  line-height: 1.1;
-  font-variant-numeric: tabular-nums;
+  text-align: left;
 }
-.metric-card-compare {
-  margin-top: 9px;
-  font-size: 0.8rem;
+.metrics-table td:not(:first-child) {
   color: var(--ink-soft);
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
+}
+.metrics-table td.metrics-table-current {
+  color: var(--ink);
+  font-weight: 700;
 }
 .metric-change {
   display: inline-flex;

@@ -56,6 +56,10 @@ export type PressCoverageItem = {
   addedAt: string;
 };
 
+// Normalizing here too (not just on the way in) means a report saved
+// before this formatting fix existed still displays correctly — it isn't
+// a one-time migration, it's applied fresh on every read, so there's
+// nothing to backfill and no stale data left behind either.
 function asMetrics(value: unknown): EarningsMetric[] {
   if (!Array.isArray(value)) return [];
   return value
@@ -63,9 +67,9 @@ function asMetrics(value: unknown): EarningsMetric[] {
     .filter((m) => typeof m.label === "string" && typeof m.current === "string")
     .map((m) => ({
       label: m.label as string,
-      current: m.current as string,
-      priorYear: typeof m.priorYear === "string" ? m.priorYear : undefined,
-      change: typeof m.change === "string" ? m.change : undefined,
+      current: normalizeMetricValue(m.current as string),
+      priorYear: typeof m.priorYear === "string" ? normalizeMetricValue(m.priorYear) : undefined,
+      change: typeof m.change === "string" ? normalizeMetricValue(m.change) : undefined,
     }));
 }
 
