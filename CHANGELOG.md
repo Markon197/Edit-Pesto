@@ -2,6 +2,9 @@
 
 Every shipped change bumps `APP_VERSION` in [lib/version.ts](lib/version.ts) (shown in the masthead) and gets a line here, so it's obvious at a glance whether the live site reflects the latest request.
 
+## Version 27 — 2026-09-21
+- **Fact-check and LinkedIn post buttons moved to the top of the output pane**, next to the edit count, and the header is now pinned (sticky) so they stay in reach however far down a long article you've scrolled. They'd been living in the footer row with Accept all / Copy, which on a long article meant scrolling past the entire article just to find them — the side panel itself was already fixed to the screen, it was the buttons that opened it that were out of sight.
+
 ## Version 26 — 2026-09-21
 - **Accuracy check and LinkedIn post now open in a side panel** instead of cards buried at the bottom of the page. Click either button and the panel slides in straight away with a loading state, docked to the right with the article still visible beside it (on wide screens the page shifts left to make room, so you can read the flags while fixing the copy; on narrow screens it overlays). Tabs at the top switch between the two, Escape or ✕ closes it, and running a fresh article check closes it since its results would be stale.
 - **Accuracy check**: a clear verdict banner at the top (a green tick for "Nothing flagged", or an amber count of things to check), then the flags, the checked-and-confirmed list, and a "Run again" button.

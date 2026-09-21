@@ -650,10 +650,43 @@ button:disabled {
 .insight-rerun {
   align-self: flex-start;
 }
-.pane-actions .btn-ghost.is-open {
-  background: var(--navy-tint);
-  border-color: var(--navy);
+/* Output pane header: stays pinned at the top while scrolling a long
+   article, carrying the two review tools next to the edit count. */
+.pane-head-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  background: var(--panel);
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+.pane-head-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.tool-btn {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.8rem;
+  font-weight: 700;
   color: var(--navy);
+  background: var(--panel);
+  border: 1px solid var(--navy);
+  border-radius: 3px;
+  padding: 5px 11px;
+  cursor: pointer;
+}
+.tool-btn:hover:not(:disabled) {
+  background: var(--navy-tint);
+}
+.tool-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.tool-btn.is-open {
+  background: var(--navy);
+  color: var(--panel);
 }
 
 /* Accuracy check */

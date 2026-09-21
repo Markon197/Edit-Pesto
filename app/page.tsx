@@ -342,11 +342,32 @@ export default function Home() {
           </div>
 
           <div className="pane">
-            <div className="pane-head">
+            {/* Sticky, so the two review tools stay in reach however long the
+                article is — they used to live in the footer, which on a long
+                article meant scrolling past the whole thing to find them. */}
+            <div className="pane-head pane-head-sticky">
               <h2>Ready to publish</h2>
-              <span className={`count${result && stats.total > 0 && stats.pending === 0 ? " count-ready" : ""}`}>
-                {countLabel}
-              </span>
+              <div className="pane-head-tools">
+                <button
+                  className={`tool-btn${drawer === "fact" ? " is-open" : ""}`}
+                  onClick={openFact}
+                  disabled={!result}
+                  title="Check names, titles and facts"
+                >
+                  {factLoading ? "Checking…" : "✓ Fact-check"}
+                </button>
+                <button
+                  className={`tool-btn${drawer === "linkedin" ? " is-open" : ""}`}
+                  onClick={openLinkedin}
+                  disabled={!result}
+                  title="Draft a short LinkedIn post"
+                >
+                  {linkedinLoading ? "Writing…" : "LinkedIn post"}
+                </button>
+                <span className={`count${result && stats.total > 0 && stats.pending === 0 ? " count-ready" : ""}`}>
+                  {countLabel}
+                </span>
+              </div>
             </div>
             <div className="output-body-wrap">
               {/* Loading overlay is a sibling, not a swap: the ref'd div below
@@ -371,12 +392,6 @@ export default function Home() {
               </button>
               <button className="btn-ghost" onClick={copyPlainText} disabled={!result}>
                 Copy plain text
-              </button>
-              <button className={`btn-ghost${drawer === "fact" ? " is-open" : ""}`} onClick={openFact} disabled={!result}>
-                {factLoading ? "Checking facts…" : "✓ Fact-check"}
-              </button>
-              <button className={`btn-ghost${drawer === "linkedin" ? " is-open" : ""}`} onClick={openLinkedin} disabled={!result}>
-                {linkedinLoading ? "Writing…" : "LinkedIn post"}
               </button>
               <span className={`copied-flag${copiedFlag === "cms" || copiedFlag === "plain" ? " show" : ""}`}>
                 Copied ✓
