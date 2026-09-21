@@ -134,11 +134,17 @@ export function ensureSchema(): Promise<void> {
 // Fire-and-forget usage tracking for the hidden /stats page. Never throws —
 // a logging failure must never break the feature it's logging.
 export async function logActivity(action: string, detail?: string): Promise<void> {
-  try {
-    await ensureSchema();
-    await sql`INSERT INTO activity_log (id, action, detail) VALUES (${randomUUID()}, ${action}, ${detail ?? null});`;
-  } catch (err) {
-    console.error("logActivity failed", err);
+  // One retry — a single dropped connection on a serverless cold start
+  // shouldn't silently lose a usage record, and the stats page is only
+  // useful if it's complete. Still never throws.
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      await ensureSchema();
+      await sql`INSERT INTO activity_log (id, action, detail) VALUES (${randomUUID()}, ${action}, ${detail ?? null});`;
+      return;
+    } catch (err) {
+      console.error(`logActivity failed (attempt ${attempt}/2)`, action, err);
+    }
   }
 }
 

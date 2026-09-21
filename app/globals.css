@@ -555,6 +555,88 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 }
+/* Accuracy check + LinkedIn post: two wider cards, not three narrow ones */
+.side-row.side-row-2 {
+  grid-template-columns: 1fr 1fr;
+  align-items: start;
+}
+@media (max-width: 920px) {
+  .side-row.side-row-2 {
+    grid-template-columns: 1fr;
+  }
+}
+.fact-summary {
+  margin: 0;
+  font-size: 0.95rem;
+  font-style: italic;
+  color: var(--ink);
+}
+.fact-clear {
+  margin: 0;
+  font-weight: 700;
+  color: var(--add-ink);
+}
+.fact-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.fact-item {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--earn);
+  border-radius: 3px;
+  padding: 10px 12px;
+  background: var(--paper);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+.fact-item.high {
+  border-left-color: var(--del-ink);
+}
+.fact-item-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+.fact-item.high .fact-conf {
+  color: var(--del-ink);
+}
+.fact-excerpt {
+  font-style: italic;
+  color: var(--ink-soft);
+  margin-bottom: 3px;
+}
+.fact-suggestion {
+  margin-top: 3px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.fact-disclaimer {
+  margin: 0;
+  font-size: 0.74rem;
+  color: var(--ink-soft);
+  font-style: italic;
+  line-height: 1.4;
+}
+.linkedin-post {
+  white-space: pre-wrap;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 12px 14px;
+  font-size: 0.96rem;
+  line-height: 1.55;
+  user-select: all;
+}
 .card {
   background: var(--panel);
   border: 1px solid var(--line);

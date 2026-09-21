@@ -14,6 +14,23 @@ type CheckResult = {
 
 type Stats = { total: number; accepted: number; denied: number; pending: number };
 
+type FactIssue = {
+  excerpt: string;
+  category: "name" | "title_or_role" | "company" | "fact" | "inconsistency";
+  problem: string;
+  suggestion: string;
+  confidence: "high" | "medium";
+};
+type FactCheck = { summary: string; issues: FactIssue[] };
+
+const FACT_CATEGORY_LABELS: Record<FactIssue["category"], string> = {
+  name: "Name",
+  title_or_role: "Title / role",
+  company: "Company",
+  fact: "Fact",
+  inconsistency: "Inconsistent",
+};
+
 function htmlToText(html: string): string {
   const div = document.createElement("div");
   div.innerHTML = html;
@@ -28,6 +45,13 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copiedFlag, setCopiedFlag] = useState<string | null>(null);
+
+  const [factCheck, setFactCheck] = useState<FactCheck | null>(null);
+  const [factLoading, setFactLoading] = useState(false);
+  const [factError, setFactError] = useState<string | null>(null);
+  const [linkedinPost, setLinkedinPost] = useState<string | null>(null);
+  const [linkedinLoading, setLinkedinLoading] = useState(false);
+  const [linkedinError, setLinkedinError] = useState<string | null>(null);
 
   function flash(key: string) {
     setCopiedFlag(key);
@@ -127,6 +151,11 @@ export default function Home() {
     setLoading(true);
     setError(null);
     setResult(null);
+    // A fresh check makes any earlier fact-check / post stale.
+    setFactCheck(null);
+    setFactError(null);
+    setLinkedinPost(null);
+    setLinkedinError(null);
     try {
       const data = await fetchJson("/api/check", {
         method: "POST",
@@ -191,6 +220,58 @@ export default function Home() {
     if (!html.trim()) return;
     await navigator.clipboard.writeText(htmlToText(html));
     flash("plain");
+  }
+
+  // Both add-ons work off the article as it currently stands in the output
+  // pane (accepted edits applied, denied ones reverted), not the raw paste.
+  function currentArticleText(): string {
+    return htmlToText(resolvedHtml());
+  }
+
+  async function runFactCheck() {
+    const text = currentArticleText();
+    if (!text) return;
+    setFactLoading(true);
+    setFactError(null);
+    setFactCheck(null);
+    try {
+      const data = await fetchJson("/api/factcheck", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      setFactCheck(data as FactCheck);
+    } catch (e) {
+      setFactError(e instanceof Error ? e.message : "The accuracy check failed.");
+    } finally {
+      setFactLoading(false);
+    }
+  }
+
+  async function runLinkedin() {
+    const text = currentArticleText();
+    if (!text) return;
+    setLinkedinLoading(true);
+    setLinkedinError(null);
+    setLinkedinPost(null);
+    try {
+      const data = await fetchJson("/api/linkedin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      setLinkedinPost(data.post as string);
+    } catch (e) {
+      setLinkedinError(e instanceof Error ? e.message : "Couldn't generate a post.");
+    } finally {
+      setLinkedinLoading(false);
+    }
+  }
+
+  async function copyLinkedin() {
+    if (!linkedinPost) return;
+    await navigator.clipboard.writeText(linkedinPost);
+    flash("linkedin");
   }
 
   async function copyList(key: string, items: string[]) {
@@ -269,6 +350,12 @@ export default function Home() {
               <button className="btn-ghost" onClick={copyPlainText} disabled={!result}>
                 Copy plain text
               </button>
+              <button className="btn-ghost" onClick={runFactCheck} disabled={!result || factLoading}>
+                {factLoading ? "Checking facts…" : "Fact-check"}
+              </button>
+              <button className="btn-ghost" onClick={runLinkedin} disabled={!result || linkedinLoading}>
+                {linkedinLoading ? "Writing…" : "LinkedIn post"}
+              </button>
               <span className={`copied-flag${copiedFlag === "cms" || copiedFlag === "plain" ? " show" : ""}`}>
                 Copied ✓
               </span>
@@ -337,6 +424,65 @@ export default function Home() {
             )}
           </div>
         </section>
+
+        {(factLoading || factCheck || factError || linkedinLoading || linkedinPost || linkedinError) && (
+          <section className="side-row side-row-2">
+            {(factLoading || factCheck || factError) && (
+              <div className="card">
+                <h3>Accuracy check</h3>
+                {factLoading && <p className="empty-hint">Checking names, titles and facts…</p>}
+                {factError && <div className="error-banner">{factError}</div>}
+                {factCheck && (
+                  <>
+                    {factCheck.summary && <p className="fact-summary">{factCheck.summary}</p>}
+                    {factCheck.issues.length === 0 ? (
+                      <p className="fact-clear">✓ Nothing flagged.</p>
+                    ) : (
+                      <ul className="fact-list">
+                        {factCheck.issues.map((issue, i) => (
+                          <li key={i} className={`fact-item ${issue.confidence}`}>
+                            <div className="fact-item-top">
+                              <span className="fact-cat">{FACT_CATEGORY_LABELS[issue.category]}</span>
+                              <span className="fact-conf">{issue.confidence === "high" ? "Likely error" : "Worth a look"}</span>
+                            </div>
+                            <div className="fact-excerpt">“{issue.excerpt}”</div>
+                            <div className="fact-problem">{issue.problem}</div>
+                            {issue.suggestion && <div className="fact-suggestion">→ {issue.suggestion}</div>}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    <p className="fact-disclaimer">
+                      Quick check from the model's own knowledge — no web lookup, so it can't verify recent events or
+                      appointments. A second pair of eyes, not a substitute for checking sources.
+                    </p>
+                  </>
+                )}
+              </div>
+            )}
+
+            {(linkedinLoading || linkedinPost || linkedinError) && (
+              <div className="card">
+                <h3>LinkedIn post</h3>
+                {linkedinLoading && <p className="empty-hint">Writing a short post…</p>}
+                {linkedinError && <div className="error-banner">{linkedinError}</div>}
+                {linkedinPost && (
+                  <>
+                    <div className="linkedin-post">{linkedinPost}</div>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      <button className="btn-ghost" onClick={copyLinkedin}>
+                        {copiedFlag === "linkedin" ? "Copied ✓" : "Copy post"}
+                      </button>
+                      <button className="btn-ghost" onClick={runLinkedin} disabled={linkedinLoading}>
+                        Rewrite
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </section>
+        )}
       </main>
     </>
   );

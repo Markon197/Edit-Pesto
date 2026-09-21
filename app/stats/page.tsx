@@ -11,6 +11,11 @@ type DailyRow = { date: string; count: number; byAction: Record<string, number> 
 const ACTION_LABELS: Record<string, string> = {
   site_visit: "Site visit",
   edit_check: "Edit tab — article checked",
+  edit_check_error: "Edit tab — check failed",
+  fact_check: "Edit tab — accuracy check run",
+  fact_check_error: "Edit tab — accuracy check failed",
+  linkedin_post: "Edit tab — LinkedIn post generated",
+  linkedin_post_error: "Edit tab — LinkedIn post failed",
   scan_events: "Calendar — insurance events scanned",
   scan_earnings: "Calendar — earnings calendar scanned",
   scan_holidays: "Calendar — UK bank holidays scanned",

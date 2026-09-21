@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { ensureSchema, friendlyDbError, sql } from "@/lib/db";
 
 export const runtime = "nodejs";
+// Never prerender/cache at build time — Next 14 statically caches a GET
+// handler that never reads the request, which froze this route's data at
+// whatever the last deploy saw.
+export const dynamic = "force-dynamic";
 
 const DAILY_WINDOW_DAYS = 30;
 

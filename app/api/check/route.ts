@@ -108,6 +108,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (err) {
     console.error("edit-pesto check failed", err);
+    await logActivity("edit_check_error");
     return NextResponse.json(
       { error: "Something went wrong while checking the article. Try again in a moment." },
       { status: 500 }

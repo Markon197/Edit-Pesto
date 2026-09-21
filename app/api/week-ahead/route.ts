@@ -4,6 +4,10 @@ import { rowToEvent } from "@/lib/events";
 import { mondayOf, todayISO, weekDatesFrom } from "@/lib/weekDates";
 
 export const runtime = "nodejs";
+// Never prerender/cache at build time — Next 14 statically caches a GET
+// handler that never reads the request, which froze this route's data at
+// whatever the last deploy saw.
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {

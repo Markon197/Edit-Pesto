@@ -4,7 +4,10 @@
 // returns something that isn't JSON (e.g. a platform timeout page when a
 // slow request, like an AI scan, runs past its limit).
 export async function fetchJson(url: string, init?: RequestInit): Promise<any> {
-  const res = await fetch(url, init);
+  // no-store by default: every call here reads live shared data (events,
+  // stats, this week's list), and a cached copy — browser or CDN — is
+  // always a bug for this app, never a feature.
+  const res = await fetch(url, { cache: "no-store", ...init });
   const text = await res.text();
   let data: any = null;
   if (text) {

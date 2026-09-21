@@ -2,6 +2,14 @@
 
 Every shipped change bumps `APP_VERSION` in [lib/version.ts](lib/version.ts) (shown in the masthead) and gets a line here, so it's obvious at a glance whether the live site reflects the latest request.
 
+## Version 24 — 2026-09-21
+- **Fixed the stats page being frozen.** Diagnosed on the live site: `/api/stats` was being served from Vercel's build-time cache (`x-vercel-cache: HIT`), with its newest entry from 18 August — the day of the last deploy. Next 14 statically caches a `GET` route handler that never reads the request, so the page showed a snapshot from the last build rather than live data. Activity was very likely still being recorded the whole time; the page reading it just never refreshed.
+- **Fixed Week Ahead not moving on each week** — same root cause: `/api/week-ahead` was prerendered at build time, stuck on the week of 17–23 August. (`/api/events` and `/api/tags` escaped only by accident, because they also export a POST handler.)
+- Every read route now opts out explicitly (`force-dynamic`), and the client fetch helper sends `no-store`, so neither the CDN nor the browser can serve a stale copy again.
+- **More reliable logging**: `logActivity` now retries once before giving up (it never throws either way), and failed Edit checks, accuracy checks and LinkedIn posts are logged as their own entries so they show up in stats instead of vanishing. Logging is server-side and unconditional, so it already covers every user of the shared site.
+- **New: Fact-check button** on the Edit tab. A quick, cheap accuracy check of the checked article — people's names and titles, company names, general factual claims (not the contents of quotes), and internal consistency (same person spelled or titled two ways). Runs on Haiku with no web search, a fraction of a cent per article. It is deliberately conservative and says so in the UI: it works from the model's own knowledge, so it can't verify recent events or appointments.
+- **New: LinkedIn post button.** A 45–80 word post from the article as it currently stands (accepted edits applied), factual only, no emojis, up to three hashtags, with Copy and Rewrite.
+
 ## Version 23 — 2026-08-18
 - **Metrics table is back** — the stat-card grid from Version 22 turned out busier and harder to scan than the table it replaced, so reverted, keeping only what actually helped: the two middle columns are now headed with the real period names ("H1 2026" / "H1 2025") instead of generic labels, and the change column still carries the ↑/↓ arrow and color.
 - **Fixed stale formatting on already-saved reports**: the "USD"/parentheses formatting fix in Version 22 only applied to newly-extracted or newly-saved data, so a report saved earlier kept showing "USD 3,489 million" and "(8.1pts)" even after the fix shipped. Normalization now also runs on every read, not just on the way in — no migration needed, existing reports just display correctly from now on.
