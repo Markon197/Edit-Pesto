@@ -53,6 +53,16 @@ export default function Home() {
   const [linkedinPost, setLinkedinPost] = useState<string | null>(null);
   const [linkedinLoading, setLinkedinLoading] = useState(false);
   const [linkedinError, setLinkedinError] = useState<string | null>(null);
+  // Which side panel is open. Results used to render in cards at the very
+  // bottom of the page, out of sight — now they open beside the article.
+  const [drawer, setDrawer] = useState<"fact" | "linkedin" | null>(null);
+
+  useEffect(() => {
+    if (!drawer) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setDrawer(null);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [drawer]);
 
   function flash(key: string) {
     setCopiedFlag(key);
@@ -157,6 +167,7 @@ export default function Home() {
     setFactError(null);
     setLinkedinPost(null);
     setLinkedinError(null);
+    setDrawer(null);
     try {
       const data = await fetchJson("/api/check", {
         method: "POST",
@@ -269,6 +280,16 @@ export default function Home() {
     }
   }
 
+  // Opening a tab runs it the first time; reopening just shows what's there.
+  function openFact() {
+    setDrawer("fact");
+    if (!factCheck && !factLoading) runFactCheck();
+  }
+  function openLinkedin() {
+    setDrawer("linkedin");
+    if (!linkedinPost && !linkedinLoading) runLinkedin();
+  }
+
   async function copyLinkedin() {
     if (!linkedinPost) return;
     await navigator.clipboard.writeText(linkedinPost);
@@ -297,7 +318,7 @@ export default function Home() {
     <>
       <Masthead />
 
-      <main>
+      <main className={drawer ? "has-drawer" : undefined}>
         <section className="workspace">
           <div className="pane">
             <div className="pane-head">
@@ -351,10 +372,10 @@ export default function Home() {
               <button className="btn-ghost" onClick={copyPlainText} disabled={!result}>
                 Copy plain text
               </button>
-              <button className="btn-ghost" onClick={runFactCheck} disabled={!result || factLoading}>
-                {factLoading ? "Checking facts…" : "Fact-check"}
+              <button className={`btn-ghost${drawer === "fact" ? " is-open" : ""}`} onClick={openFact} disabled={!result}>
+                {factLoading ? "Checking facts…" : "✓ Fact-check"}
               </button>
-              <button className="btn-ghost" onClick={runLinkedin} disabled={!result || linkedinLoading}>
+              <button className={`btn-ghost${drawer === "linkedin" ? " is-open" : ""}`} onClick={openLinkedin} disabled={!result}>
                 {linkedinLoading ? "Writing…" : "LinkedIn post"}
               </button>
               <span className={`copied-flag${copiedFlag === "cms" || copiedFlag === "plain" ? " show" : ""}`}>
@@ -426,21 +447,46 @@ export default function Home() {
           </div>
         </section>
 
-        {(factLoading || factCheck || factError || linkedinLoading || linkedinPost || linkedinError) && (
-          <section className="side-row side-row-2">
-            {(factLoading || factCheck || factError) && (
-              <div className="card">
-                <h3>Accuracy check</h3>
+      </main>
+
+      {drawer && (
+        <aside className="insight-drawer" role="dialog" aria-label={drawer === "fact" ? "Accuracy check" : "LinkedIn post"}>
+          <div className="insight-head">
+            <div className="insight-tabs">
+              <button className={drawer === "fact" ? "active" : ""} onClick={openFact}>
+                ✓ Accuracy check
+              </button>
+              <button className={drawer === "linkedin" ? "active" : ""} onClick={openLinkedin}>
+                LinkedIn post
+              </button>
+            </div>
+            <button className="insight-close" onClick={() => setDrawer(null)} aria-label="Close panel">
+              ✕
+            </button>
+          </div>
+
+          <div className="insight-body">
+            {drawer === "fact" && (
+              <>
                 {factLoading && (
-                  <p className="empty-hint">Checking names, titles and facts against the web — usually 10–30 seconds…</p>
+                  <PastaLoader label="Checking names, titles and facts against the web… usually 10–30 seconds" />
                 )}
                 {factError && <div className="error-banner">{factError}</div>}
                 {factCheck && (
                   <>
-                    {factCheck.summary && <p className="fact-summary">{factCheck.summary}</p>}
-                    {factCheck.issues.length === 0 ? (
-                      <p className="fact-clear">✓ Nothing flagged.</p>
-                    ) : (
+                    <div className={`fact-verdict ${factCheck.issues.length === 0 ? "clear" : "flagged"}`}>
+                      <div className="fact-verdict-icon">{factCheck.issues.length === 0 ? "✓" : factCheck.issues.length}</div>
+                      <div>
+                        <div className="fact-verdict-title">
+                          {factCheck.issues.length === 0
+                            ? "Nothing flagged"
+                            : `${factCheck.issues.length} thing${factCheck.issues.length === 1 ? "" : "s"} to check`}
+                        </div>
+                        {factCheck.summary && <div className="fact-verdict-sub">{factCheck.summary}</div>}
+                      </div>
+                    </div>
+
+                    {factCheck.issues.length > 0 && (
                       <ul className="fact-list">
                         {factCheck.issues.map((issue, i) => (
                           <li key={i} className={`fact-item ${issue.confidence}`}>
@@ -460,6 +506,7 @@ export default function Home() {
                         ))}
                       </ul>
                     )}
+
                     {factCheck.confirmed.length > 0 && (
                       <div className="fact-confirmed">
                         <div className="fact-confirmed-title">Checked and confirmed</div>
@@ -470,38 +517,61 @@ export default function Home() {
                         </ul>
                       </div>
                     )}
+
                     <p className="fact-disclaimer">
                       Checked with a few quick web searches on the main people and companies, so it won't cover every
                       name. A second pair of eyes, not a substitute for checking your sources.
                     </p>
                   </>
                 )}
-              </div>
+                {!factLoading && (factCheck || factError) && (
+                  <button className="btn-ghost insight-rerun" onClick={runFactCheck}>
+                    Run again
+                  </button>
+                )}
+              </>
             )}
 
-            {(linkedinLoading || linkedinPost || linkedinError) && (
-              <div className="card">
-                <h3>LinkedIn post</h3>
-                {linkedinLoading && <p className="empty-hint">Writing a short post…</p>}
+            {drawer === "linkedin" && (
+              <>
+                {linkedinLoading && <PastaLoader label="Writing a short post…" />}
                 {linkedinError && <div className="error-banner">{linkedinError}</div>}
-                {linkedinPost && (
+                {linkedinPost !== null && !linkedinLoading && (
                   <>
-                    <div className="linkedin-post">{linkedinPost}</div>
-                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                      <button className="btn-ghost" onClick={copyLinkedin}>
+                    <div className="li-card">
+                      <div className="li-card-head">
+                        <div className="li-avatar">IE</div>
+                        <div>
+                          <div className="li-name">InsuranceERM</div>
+                          <div className="li-meta">Post preview · edit below before copying</div>
+                        </div>
+                      </div>
+                      <textarea
+                        className="li-text"
+                        value={linkedinPost}
+                        onChange={(e) => setLinkedinPost(e.target.value)}
+                        rows={11}
+                        aria-label="LinkedIn post text"
+                      />
+                      <div className="li-count">
+                        {linkedinPost.trim() ? linkedinPost.trim().split(/\s+/).length : 0} words
+                      </div>
+                    </div>
+                    <div className="li-actions">
+                      <button className="btn-primary li-copy" onClick={copyLinkedin}>
                         {copiedFlag === "linkedin" ? "Copied ✓" : "Copy post"}
                       </button>
-                      <button className="btn-ghost" onClick={runLinkedin} disabled={linkedinLoading}>
+                      <button className="btn-ghost" onClick={runLinkedin}>
                         Rewrite
                       </button>
                     </div>
                   </>
                 )}
-              </div>
+              </>
             )}
-          </section>
-        )}
-      </main>
+          </div>
+        </aside>
+      )}
     </>
   );
 }

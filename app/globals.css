@@ -555,26 +555,158 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 }
-/* Accuracy check + LinkedIn post: two wider cards, not three narrow ones */
-.side-row.side-row-2 {
-  grid-template-columns: 1fr 1fr;
-  align-items: start;
+/* ---------- Side panel: accuracy check + LinkedIn post ---------- */
+/* Docked to the right edge so the article stays visible beside it. On wide
+   screens the page content is pushed left to make room (main.has-drawer);
+   on narrow screens it simply overlays. */
+.insight-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 450px;
+  max-width: 100vw;
+  z-index: 30;
+  background: var(--panel);
+  border-left: 1px solid var(--line);
+  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.14);
+  display: flex;
+  flex-direction: column;
+  animation: insight-in 0.22s ease-out;
 }
-@media (max-width: 920px) {
-  .side-row.side-row-2 {
-    grid-template-columns: 1fr;
+@keyframes insight-in {
+  from {
+    transform: translateX(28px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
   }
 }
-.fact-summary {
-  margin: 0;
-  font-size: 0.95rem;
-  font-style: italic;
+@media (prefers-reduced-motion: reduce) {
+  .insight-drawer {
+    animation: none;
+  }
+}
+@media (min-width: 1200px) {
+  main.has-drawer {
+    padding-right: 486px;
+  }
+}
+.insight-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 3px double var(--ink);
+  background: var(--panel);
+}
+.insight-tabs {
+  display: flex;
+  gap: 4px;
+}
+.insight-tabs button {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+.insight-tabs button:hover:not(.active) {
   color: var(--ink);
 }
-.fact-clear {
-  margin: 0;
+.insight-tabs button.active {
+  color: var(--navy);
+  border-bottom-color: var(--pesto);
+}
+.insight-close {
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink-soft);
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+.insight-close:hover {
+  background: var(--navy-tint);
+  color: var(--ink);
+}
+.insight-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 16px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.insight-rerun {
+  align-self: flex-start;
+}
+.pane-actions .btn-ghost.is-open {
+  background: var(--navy-tint);
+  border-color: var(--navy);
+  color: var(--navy);
+}
+
+/* Accuracy check */
+.fact-verdict {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+}
+.fact-verdict.clear {
+  background: var(--add-bg);
+  border-color: var(--add-ink);
+}
+.fact-verdict.flagged {
+  background: var(--earn-tint);
+  border-color: var(--earn);
+}
+.fact-verdict-icon {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.15rem;
   font-weight: 700;
-  color: var(--add-ink);
+  color: #fff;
+}
+.fact-verdict.clear .fact-verdict-icon {
+  background: var(--add-ink);
+}
+.fact-verdict.flagged .fact-verdict-icon {
+  background: var(--earn);
+}
+:root[data-theme="dark"] .fact-verdict-icon {
+  color: var(--paper);
+}
+.fact-verdict-title {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+.fact-verdict-sub {
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  font-style: italic;
+  margin-top: 2px;
+  line-height: 1.4;
 }
 .fact-list {
   list-style: none;
@@ -653,16 +785,6 @@ button:disabled {
   color: var(--ink-soft);
   font-style: italic;
   line-height: 1.4;
-}
-.linkedin-post {
-  white-space: pre-wrap;
-  background: var(--paper);
-  border: 1px solid var(--line);
-  border-radius: 3px;
-  padding: 12px 14px;
-  font-size: 0.96rem;
-  line-height: 1.55;
-  user-select: all;
 }
 .card {
   background: var(--panel);
@@ -2070,4 +2192,76 @@ button.action:disabled {
 }
 .tag-highlight-toggle input {
   width: auto;
+}
+
+/* LinkedIn post preview — a card that reads like the post it will become */
+.li-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px 16px 10px;
+  box-shadow: var(--shadow);
+}
+:root[data-theme="dark"] .li-card {
+  background: var(--paper);
+}
+.li-card-head {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.li-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--navy);
+  color: var(--panel);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+.li-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--ink);
+}
+.li-meta {
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+}
+.li-text {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 0.97rem;
+  line-height: 1.55;
+  resize: vertical;
+  padding: 0;
+  outline: none;
+}
+.li-text:focus {
+  background: var(--navy-tint);
+}
+.li-count {
+  text-align: right;
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+  margin-top: 4px;
+}
+.li-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.li-copy {
+  flex: 1;
+  padding: 12px 16px;
+  font-size: 1rem;
 }

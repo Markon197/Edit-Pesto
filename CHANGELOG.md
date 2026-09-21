@@ -2,6 +2,11 @@
 
 Every shipped change bumps `APP_VERSION` in [lib/version.ts](lib/version.ts) (shown in the masthead) and gets a line here, so it's obvious at a glance whether the live site reflects the latest request.
 
+## Version 26 — 2026-09-21
+- **Accuracy check and LinkedIn post now open in a side panel** instead of cards buried at the bottom of the page. Click either button and the panel slides in straight away with a loading state, docked to the right with the article still visible beside it (on wide screens the page shifts left to make room, so you can read the flags while fixing the copy; on narrow screens it overlays). Tabs at the top switch between the two, Escape or ✕ closes it, and running a fresh article check closes it since its results would be stale.
+- **Accuracy check**: a clear verdict banner at the top (a green tick for "Nothing flagged", or an amber count of things to check), then the flags, the checked-and-confirmed list, and a "Run again" button.
+- **LinkedIn post**: shown as a post-style preview card with a live word count. The text is editable in place before you copy, a full-width Copy button sits underneath, and Rewrite generates another version.
+
 ## Version 25 — 2026-09-21
 - **The accuracy check now searches the web.** Fair point: names and job titles are exactly what changes, and without a search it could only go on the model's memory. It now gets a hard cap of 3 web searches, spent on the most important people named with a title (name spelling and *current* role) and any company or figure it genuinely doubts, rather than every name. Still on Haiku with a small output limit, so it stays cheap — expect a few cents per check rather than the fraction of a cent it was, and roughly 10–30 seconds.
 - Flags can now carry a **source link** to the page that shows the problem, and there's a **"Checked and confirmed"** list so an editor can see which people and companies were actually verified rather than just an absence of flags.
