@@ -98,9 +98,21 @@ export const SUBMIT_LINKEDIN_POST_TOOL = {
   input_schema: {
     type: "object" as const,
     properties: {
-      post: { type: "string", description: "The complete post, ready to paste. Plain text, blank lines between paragraphs." },
+      post: { type: "string", description: "The complete post, ready to paste. Plain text, blank lines between paragraphs. People and companies are written as @Full Name / @Company Name." },
+      mentions: {
+        type: "array",
+        description: "Every person and company written with an @ in the post, exactly as spelled after the @.",
+        items: {
+          type: "object",
+          properties: {
+            name: { type: "string", description: "The name exactly as written after the @ in the post." },
+            kind: { type: "string", enum: ["person", "company"] },
+          },
+          required: ["name", "kind"],
+        },
+      },
     },
-    required: ["post"],
+    required: ["post", "mentions"],
   },
 };
 
@@ -114,6 +126,7 @@ Rules:
 - Professional, confident, British spelling. No emojis. No "excited to share".
 - Finish with one short line pointing readers to the full story, then at most 3 relevant hashtags (e.g. #Insurance #Reinsurance) on the last line.
 - Do not include a URL or a placeholder for one.
+- Tag the people and companies the story is about. Write each as @Full Name or @Company Name (e.g. @Jane Smith, @Lloyd's), using the spelling in the article. Tag at most 4, prioritising the main subject, and only tag a person if the article gives their full name. Do not tag the same one twice. Then list every tag in "mentions".
 
 Submit only via the submit_linkedin_post tool.
 

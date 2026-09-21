@@ -2,6 +2,10 @@
 
 Every shipped change bumps `APP_VERSION` in [lib/version.ts](lib/version.ts) (shown in the masthead) and gets a line here, so it's obvious at a glance whether the live site reflects the latest request.
 
+## Version 28 — 2026-09-21
+- **LinkedIn posts now tag the people and companies in the story.** The post names them as @Full Name / @Company (up to 4, only people the article gives a full name for), and a "Tag on LinkedIn" row under the preview lists each one as a chip that opens a LinkedIn search for that person or company. LinkedIn doesn't accept tags pasted as text, so the flow is: paste, retype each @name, pick the profile from LinkedIn's dropdown.
+- **Side panel tidy-up.** On wide screens the panel now docks beside the article instead of floating over it, so it can't cover the theme toggle or the article's right edge; the sticky header wraps cleanly when the pane is narrow; spacing tightened throughout. Below 1100px the panel becomes an overlay. Checked for overlaps at 1920, 1400, 1180, 1100, 1000 and 800px wide.
+
 ## Version 27 — 2026-09-21
 - **Fact-check and LinkedIn post buttons moved to the top of the output pane**, next to the edit count, and the header is now pinned (sticky) so they stay in reach however far down a long article you've scrolled. They'd been living in the footer row with Accept all / Copy, which on a long article meant scrolling past the entire article just to find them — the side panel itself was already fixed to the screen, it was the buttons that opened it that were out of sight.
 

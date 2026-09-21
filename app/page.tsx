@@ -23,6 +23,7 @@ type FactIssue = {
   confidence: "high" | "medium";
 };
 type FactCheck = { summary: string; issues: FactIssue[]; confirmed: string[] };
+type LinkedinMention = { name: string; kind: "person" | "company" };
 
 const FACT_CATEGORY_LABELS: Record<FactIssue["category"], string> = {
   name: "Name",
@@ -51,6 +52,7 @@ export default function Home() {
   const [factLoading, setFactLoading] = useState(false);
   const [factError, setFactError] = useState<string | null>(null);
   const [linkedinPost, setLinkedinPost] = useState<string | null>(null);
+  const [linkedinMentions, setLinkedinMentions] = useState<LinkedinMention[]>([]);
   const [linkedinLoading, setLinkedinLoading] = useState(false);
   const [linkedinError, setLinkedinError] = useState<string | null>(null);
   // Which side panel is open. Results used to render in cards at the very
@@ -273,6 +275,7 @@ export default function Home() {
         body: JSON.stringify({ text }),
       });
       setLinkedinPost(data.post as string);
+      setLinkedinMentions((data.mentions as LinkedinMention[]) ?? []);
     } catch (e) {
       setLinkedinError(e instanceof Error ? e.message : "Couldn't generate a post.");
     } finally {
@@ -318,7 +321,8 @@ export default function Home() {
     <>
       <Masthead />
 
-      <main className={drawer ? "has-drawer" : undefined}>
+      <div className={`edit-layout${drawer ? " with-drawer" : ""}`}>
+      <main>
         <section className="workspace">
           <div className="pane">
             <div className="pane-head">
@@ -364,10 +368,10 @@ export default function Home() {
                 >
                   {linkedinLoading ? "Writing…" : "LinkedIn post"}
                 </button>
-                <span className={`count${result && stats.total > 0 && stats.pending === 0 ? " count-ready" : ""}`}>
-                  {countLabel}
-                </span>
               </div>
+              <span className={`count${result && stats.total > 0 && stats.pending === 0 ? " count-ready" : ""}`}>
+                {countLabel}
+              </span>
             </div>
             <div className="output-body-wrap">
               {/* Loading overlay is a sibling, not a swap: the ref'd div below
@@ -572,6 +576,30 @@ export default function Home() {
                         {linkedinPost.trim() ? linkedinPost.trim().split(/\s+/).length : 0} words
                       </div>
                     </div>
+                    {linkedinMentions.length > 0 && (
+                      <div className="li-tags">
+                        <div className="li-tags-label">Tag on LinkedIn</div>
+                        <div className="li-tags-list">
+                          {linkedinMentions.map((m) => (
+                            <a
+                              key={m.name}
+                              className="li-tag"
+                              href={`https://www.linkedin.com/search/results/${m.kind === "company" ? "companies" : "people"}/?keywords=${encodeURIComponent(m.name)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title={`Find ${m.name} on LinkedIn`}
+                            >
+                              <span className="li-tag-kind">{m.kind === "company" ? "Co." : "Person"}</span>
+                              {m.name}
+                              <span aria-hidden="true">↗</span>
+                            </a>
+                          ))}
+                        </div>
+                        <p className="li-tags-hint">
+                          Paste the post into LinkedIn, then retype each @name and pick the profile from the dropdown to turn it into a real tag.
+                        </p>
+                      </div>
+                    )}
                     <div className="li-actions">
                       <button className="btn-primary li-copy" onClick={copyLinkedin}>
                         {copiedFlag === "linkedin" ? "Copied ✓" : "Copy post"}
@@ -587,6 +615,7 @@ export default function Home() {
           </div>
         </aside>
       )}
+      </div>
     </>
   );
 }
