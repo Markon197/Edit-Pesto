@@ -620,6 +620,33 @@ button:disabled {
   font-weight: 700;
   color: var(--ink);
 }
+.fact-source {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 0.8rem;
+}
+.fact-confirmed {
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+.fact-confirmed-title {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  color: var(--ink-soft);
+  margin-bottom: 6px;
+}
+.fact-confirmed ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.86rem;
+  color: var(--add-ink);
+}
 .fact-disclaimer {
   margin: 0;
   font-size: 0.74rem;

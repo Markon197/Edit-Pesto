@@ -2,6 +2,12 @@
 
 Every shipped change bumps `APP_VERSION` in [lib/version.ts](lib/version.ts) (shown in the masthead) and gets a line here, so it's obvious at a glance whether the live site reflects the latest request.
 
+## Version 25 — 2026-09-21
+- **The accuracy check now searches the web.** Fair point: names and job titles are exactly what changes, and without a search it could only go on the model's memory. It now gets a hard cap of 3 web searches, spent on the most important people named with a title (name spelling and *current* role) and any company or figure it genuinely doubts, rather than every name. Still on Haiku with a small output limit, so it stays cheap — expect a few cents per check rather than the fraction of a cent it was, and roughly 10–30 seconds.
+- Flags can now carry a **source link** to the page that shows the problem, and there's a **"Checked and confirmed"** list so an editor can see which people and companies were actually verified rather than just an absence of flags.
+- If a search is inconclusive, it says it couldn't verify rather than calling it an error; it only marks something a likely error when a source clearly contradicts the article.
+- The LinkedIn post is unchanged (still no web search).
+
 ## Version 24 — 2026-09-21
 - **Fixed the stats page being frozen.** Diagnosed on the live site: `/api/stats` was being served from Vercel's build-time cache (`x-vercel-cache: HIT`), with its newest entry from 18 August — the day of the last deploy. Next 14 statically caches a `GET` route handler that never reads the request, so the page showed a snapshot from the last build rather than live data. Activity was very likely still being recorded the whole time; the page reading it just never refreshed.
 - **Fixed Week Ahead not moving on each week** — same root cause: `/api/week-ahead` was prerendered at build time, stuck on the week of 17–23 August. (`/api/events` and `/api/tags` escaped only by accident, because they also export a POST handler.)

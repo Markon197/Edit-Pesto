@@ -1,9 +1,13 @@
-// Prompts + tool schemas for the Edit tab's two quick add-ons: a cheap
-// accuracy check and a short LinkedIn post. Both run on Haiku (the
-// cheapest model) with no web search — that's what keeps them at a
-// fraction of a cent per article, and it's also why the fact-check is
-// honest about what it can and can't do (see the prompt).
+// Prompts + tool schemas for the Edit tab's two quick add-ons: an accuracy
+// check and a short LinkedIn post. Both run on Haiku (the cheapest model).
+// The LinkedIn post uses no web search at all. The accuracy check gets a
+// small, hard-capped web search budget (FACT_CHECK_MAX_SEARCHES) — names
+// and job titles are exactly the kind of thing that changes, so the
+// model's own memory isn't enough — but the cap is what stops it turning
+// into the expensive open-ended research the earlier calendar scans did.
 export const QUICK_MODEL = "claude-haiku-4-5-20251001";
+
+export const FACT_CHECK_MAX_SEARCHES = 3;
 
 // Long enough for any real article, short enough to cap the cost of one
 // runaway paste.
@@ -18,6 +22,12 @@ export const SUBMIT_FACT_CHECK_TOOL = {
       summary: {
         type: "string",
         description: "One short sentence: the overall read, e.g. 'Two names worth double-checking, nothing else stood out.'",
+      },
+      confirmed: {
+        type: "array",
+        description:
+          "Up to 6 short lines for people/companies you actually verified as correct via search, e.g. 'Jane Smith — CEO, Acme Re (company site)'. Only things genuinely confirmed, so the editor can see what was checked. Empty if none.",
+        items: { type: "string" },
       },
       issues: {
         type: "array",
@@ -34,10 +44,15 @@ export const SUBMIT_FACT_CHECK_TOOL = {
             },
             problem: { type: "string", description: "What looks wrong, in one plain sentence." },
             suggestion: { type: "string", description: "What it should probably say, or what to verify. Empty if unsure." },
+            source: {
+              type: "string",
+              description: "URL of the page that supports your concern, if a search found one. Empty otherwise.",
+            },
             confidence: {
               type: "string",
               enum: ["high", "medium"],
-              description: "high = you're confident it's an error; medium = worth a second look.",
+              description:
+                "high = a search or the article itself clearly shows it's wrong; medium = a real discrepancy you couldn't fully resolve.",
             },
           },
           required: ["excerpt", "category", "problem", "confidence"],
@@ -57,10 +72,17 @@ Check, in this order of priority:
 3. General factual claims stated by the writer — NOT statements inside direct quotes, which are the speaker's own words (still check a quoted speaker's name and title).
 4. Internal consistency — the same person or company spelled, titled or described differently in different places within the article. This is the most reliable check you have, so do it carefully.
 
-Important limits — be honest about them:
-- You have NO web access. You only know what you already know. Your knowledge ends before today, so events, appointments and results from recent months may be entirely unknown to you.
-- Do NOT flag something just because you don't recognise it, and do NOT assume a person has kept an old job — people change roles. Only flag a name/title/fact when you have solid, specific reason to think it's wrong, or when the article contradicts itself.
-- Use "high" confidence only when you're sure; "medium" for a real but unverified concern. If nothing meets that bar, return an empty issues list. Fewer, better findings beat a long list of guesses.
+You have a web search tool, but a HARD budget of ${FACT_CHECK_MAX_SEARCHES} searches — use them well:
+- Search only for what actually needs it: the most important people named WITH a job title (verify their name spelling and CURRENT role at that company), and any company or figure you genuinely doubt. Job titles and appointments change, and your own memory ends before today, so this is what search is for.
+- Don't search for well-known, stable facts you already know, and don't spend a search on someone with no title or claim attached. Combine people into one query where sensible (e.g. two executives at the same company).
+- Prefer authoritative sources: the company's own site or press release, reputable trade press.
+- Work quickly — don't run searches just to double-check things already settled.
+
+Judging what you find:
+- If a search clearly shows a name is misspelled or a title is out of date, that's a "high" issue — give the source URL and the corrected wording.
+- If a search is inconclusive or you simply couldn't find the person, do NOT flag it as an error; at most raise it as "medium" saying it couldn't be verified. Never flag something just because you don't recognise it.
+- Things you confirmed go in "confirmed" so the editor can see what was checked.
+- If nothing meets the bar, return an empty issues list. Fewer, better findings beat a long list of guesses.
 - Use British spelling in your own wording.
 
 Submit only via the submit_fact_check tool.

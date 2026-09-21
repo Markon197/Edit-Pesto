@@ -19,9 +19,10 @@ type FactIssue = {
   category: "name" | "title_or_role" | "company" | "fact" | "inconsistency";
   problem: string;
   suggestion: string;
+  source: string;
   confidence: "high" | "medium";
 };
-type FactCheck = { summary: string; issues: FactIssue[] };
+type FactCheck = { summary: string; issues: FactIssue[]; confirmed: string[] };
 
 const FACT_CATEGORY_LABELS: Record<FactIssue["category"], string> = {
   name: "Name",
@@ -430,7 +431,9 @@ export default function Home() {
             {(factLoading || factCheck || factError) && (
               <div className="card">
                 <h3>Accuracy check</h3>
-                {factLoading && <p className="empty-hint">Checking names, titles and facts…</p>}
+                {factLoading && (
+                  <p className="empty-hint">Checking names, titles and facts against the web — usually 10–30 seconds…</p>
+                )}
                 {factError && <div className="error-banner">{factError}</div>}
                 {factCheck && (
                   <>
@@ -448,13 +451,28 @@ export default function Home() {
                             <div className="fact-excerpt">“{issue.excerpt}”</div>
                             <div className="fact-problem">{issue.problem}</div>
                             {issue.suggestion && <div className="fact-suggestion">→ {issue.suggestion}</div>}
+                            {issue.source && (
+                              <a className="fact-source" href={issue.source} target="_blank" rel="noopener noreferrer">
+                                Source ↗
+                              </a>
+                            )}
                           </li>
                         ))}
                       </ul>
                     )}
+                    {factCheck.confirmed.length > 0 && (
+                      <div className="fact-confirmed">
+                        <div className="fact-confirmed-title">Checked and confirmed</div>
+                        <ul>
+                          {factCheck.confirmed.map((c, i) => (
+                            <li key={i}>✓ {c}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                     <p className="fact-disclaimer">
-                      Quick check from the model's own knowledge — no web lookup, so it can't verify recent events or
-                      appointments. A second pair of eyes, not a substitute for checking sources.
+                      Checked with a few quick web searches on the main people and companies, so it won't cover every
+                      name. A second pair of eyes, not a substitute for checking your sources.
                     </p>
                   </>
                 )}
